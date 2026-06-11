@@ -1,6 +1,6 @@
-#include <game.h>
-#include <window.h>
 #include <renderer.h>
+#include <window.h>
+#include <game.h>
 #include <input.h>
 #include <physics.h>
 #include <iostream>

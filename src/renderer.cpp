@@ -1,6 +1,7 @@
 #include <renderer.h>
 #include <window.h>
 #include <geometry.h>
+#include <physics.h>
 #include <iostream>
 #include <stdexcept>
 #include <glm/glm.hpp>
