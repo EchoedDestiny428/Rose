@@ -1,3 +1,4 @@
+#include <glad/glad.h>
 #include <window.h>
 #include <iostream>
 #include <stdexcept>
@@ -11,7 +12,7 @@ Window::Window(int width, int height, const char* title)
 
     // Request OpenGL 4.5 core
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 #ifdef __APPLE__
@@ -24,8 +25,13 @@ Window::Window(int width, int height, const char* title)
         throw std::runtime_error("Failed to create GLFW window");
     }
 
-    makeContextCurrent();
-    glfwSwapInterval(1); // 60 FPS vsync (can be disabled for higher FPS)
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        throw std::runtime_error("Failed to initialize GLAD");
+    }
+
+    glfwSwapInterval(0);
 }
 
 Window::~Window() {
