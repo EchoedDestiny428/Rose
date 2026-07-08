@@ -19,15 +19,21 @@ class PlayerController(Entity):
         if held_keys['escape']:
             application.quit()
 
-        joy_x = mouse.position.x
-        joy_y = mouse.position.y
+        joy_x = self.ui.cursor_pos.x
+        joy_y = self.ui.cursor_pos.y
 
         if abs(joy_x) < self.ui.deadzone: joy_x = 0
         if abs(joy_y) < self.ui.deadzone: joy_y = 0
 
         current_sens = self.ui.get_sensitivity()
-        delta_yaw = joy_x * current_sens * time.dt
-        delta_pitch = -joy_y * current_sens * time.dt
+        
+        # Scale the virtual cursor so max_radius yields a 0.5 equivalent input
+        scale_factor = 0.5 / self.ui.max_radius
+        scaled_joy_x = joy_x * scale_factor
+        scaled_joy_y = joy_y * scale_factor
+
+        delta_yaw = scaled_joy_x * current_sens * time.dt
+        delta_pitch = -scaled_joy_y * current_sens * time.dt
 
         current_accel = self.ui.get_acceleration()
         current_max_speed = self.ui.get_max_speed()
