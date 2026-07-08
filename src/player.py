@@ -5,6 +5,13 @@ class PlayerController(Entity):
         super().__init__(model='sphere', color=color.red, scale=1.0, collider='sphere')
         self.ui = ui_manager
         
+        # Laser guns
+        gun_scale = (0.1, 0.6, 0.1)
+        gun_color = color.dark_gray
+        self.gun_left = Entity(parent=self, model=Cylinder(16), color=gun_color, scale=gun_scale, position=(-0.6, 0, 0.2), rotation=(90, 0, 0))
+        self.gun_right = Entity(parent=self, model=Cylinder(16), color=gun_color, scale=gun_scale, position=(0.6, 0, 0.2), rotation=(90, 0, 0))
+        self.gun_bottom = Entity(parent=self, model=Cylinder(16), color=gun_color, scale=gun_scale, position=(0, -0.6, 0.2), rotation=(90, 0, 0))
+        
         self.third_person = False
         camera.parent = self
         camera.position = (0, 0, 0)
