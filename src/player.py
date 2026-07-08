@@ -2,7 +2,7 @@ from ursina import *
 
 class PlayerController(Entity):
     def __init__(self, ui_manager):
-        super().__init__(model='sphere', color=color.red, scale=1.0)
+        super().__init__(model='sphere', color=color.red, scale=1.0, collider='sphere')
         self.ui = ui_manager
         
         self.third_person = False
@@ -21,8 +21,10 @@ class PlayerController(Entity):
         # Boost system
         self.boost_fuel = 100.0
         self.is_boosting = False
+        self.dead = False
 
     def input(self, key):
+        if getattr(self, 'dead', False): return
         if key == 'c':
             self.coupled_mode = not self.coupled_mode
         if key == 'v':
@@ -39,6 +41,9 @@ class PlayerController(Entity):
     def update(self):
         if held_keys['escape']:
             application.quit()
+        
+        if getattr(self, 'dead', False):
+            return
 
         joy_x = self.ui.cursor_pos.x
         joy_y = self.ui.cursor_pos.y
@@ -136,3 +141,55 @@ class PlayerController(Entity):
             self.velocity = self.velocity.normalized() * current_max_speed
 
         self.position += self.velocity * time.dt
+        
+        hit_info = self.intersects()
+        if hit_info.hit:
+            impact_speed = self.velocity.length()
+            if impact_speed >= 20.0 and not getattr(self, 'dead', False):
+                self.die()
+            else:
+                self.position -= self.velocity * time.dt  # Revert to prevent clipping
+                if hit_info.normal.length() > 0:
+                    self.velocity = self.velocity - 2 * self.velocity.dot(hit_info.normal) * hit_info.normal
+                else:
+                    self.velocity = -self.velocity
+            self.velocity *= 0.5
+
+    def die(self):
+        self.dead = True
+        self.velocity = Vec3(0,0,0)
+        
+        # Switch to 3rd person view for death
+        self.third_person = True
+        camera.position = (0, 8, -30)
+        camera.rotation = (15, 0, 0)
+        self.ui.set_hud_visible(False)
+        
+        # Create explosion entity
+        self.explosion = Entity(model='sphere', color=color.orange, scale=1, position=self.position)
+        self.explosion.animate_scale(20, duration=0.5, curve=curve.out_expo)
+        self.explosion.animate_color(color.rgba(255, 100, 0, 0), duration=1.0)
+        destroy(self.explosion, delay=1.0)
+        
+        # Hide player model
+        self.visible = False
+        
+        # Schedule respawn
+        invoke(self.respawn, delay=2.0)
+
+    def respawn(self):
+        self.dead = False
+        self.position = Vec3(0, 0, 0)
+        self.velocity = Vec3(0, 0, 0)
+        self.rotation = Vec3(0, 0, 0)
+        self.roll_velocity = 0
+        self.angular_vel_yaw = 0
+        self.angular_vel_pitch = 0
+        self.boost_fuel = 100.0
+        
+        self.visible = True
+        
+        self.third_person = False
+        camera.position = (0, 0, 0)
+        camera.rotation = (0, 0, 0)
+        self.ui.set_hud_visible(True)

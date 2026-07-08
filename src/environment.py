@@ -76,6 +76,7 @@ def setup_environment():
     for _ in range(3):
         c = Entity(
             model='cube',
+            collider='box',
             color=color.azure,
             scale=(random.uniform(3, 8), random.uniform(3, 8), random.uniform(3, 8)),
             position=Vec3(
