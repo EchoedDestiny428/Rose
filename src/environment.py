@@ -27,7 +27,7 @@ class Starfield(Entity):
         self.alpha = 0.4
 
     def update(self):
-        self.position = camera.position
+        self.position = camera.world_position
 
 class SpaceDust(Entity):
     def __init__(self, num_particles=300, radius=80):
@@ -54,7 +54,7 @@ class SpaceDust(Entity):
         )
 
     def update(self):
-        cam_pos = camera.position
+        cam_pos = camera.world_position
         for p in self.particles:
             if p.world_x - cam_pos.x > self.radius: p.x -= self.radius * 2
             elif p.world_x - cam_pos.x < -self.radius: p.x += self.radius * 2

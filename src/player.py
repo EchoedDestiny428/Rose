@@ -2,8 +2,13 @@ from ursina import *
 
 class PlayerController(Entity):
     def __init__(self, ui_manager):
-        super().__init__()
+        super().__init__(model='sphere', color=color.red, scale=1.0)
         self.ui = ui_manager
+        
+        self.third_person = False
+        camera.parent = self
+        camera.position = (0, 0, 0)
+        camera.rotation = (0, 0, 0)
         
         self.velocity = Vec3(0, 0, 0)
         self.roll_velocity = 0.0
@@ -20,6 +25,16 @@ class PlayerController(Entity):
     def input(self, key):
         if key == 'c':
             self.coupled_mode = not self.coupled_mode
+        if key == 'v':
+            self.third_person = not self.third_person
+            if self.third_person:
+                camera.position = (0, 3, -15)
+                camera.rotation = (10, 0, 0)
+                self.ui.set_hud_visible(False)
+            else:
+                camera.position = (0, 0, 0)
+                camera.rotation = (0, 0, 0)
+                self.ui.set_hud_visible(True)
 
     def update(self):
         if held_keys['escape']:
@@ -85,16 +100,16 @@ class PlayerController(Entity):
         self.roll_velocity = clamp(self.roll_velocity, -max_roll_speed, max_roll_speed)
 
         delta_roll = self.roll_velocity * time.dt
-        camera.rotate((delta_pitch, delta_yaw, delta_roll))
+        self.rotate((delta_pitch, delta_yaw, delta_roll))
 
         acceleration = Vec3(0, 0, 0)
         # Scaled thrust (forward 100%, strafe 30%, reverse 30%)
-        if held_keys['w']: acceleration += camera.forward * 1.0
-        if held_keys['s']: acceleration += camera.back * 0.3
-        if held_keys['d']: acceleration += camera.right * 0.3
-        if held_keys['a']: acceleration += camera.left * 0.3
-        if held_keys['space']: acceleration += camera.up * 0.3
-        if held_keys['left control']: acceleration += camera.down * 0.3
+        if held_keys['w']: acceleration += self.forward * 1.0
+        if held_keys['s']: acceleration += self.back * 0.3
+        if held_keys['d']: acceleration += self.right * 0.3
+        if held_keys['a']: acceleration += self.left * 0.3
+        if held_keys['space']: acceleration += self.up * 0.3
+        if held_keys['left control']: acceleration += self.down * 0.3
 
         self.current_accel_magnitude = 0.0
 
@@ -120,4 +135,4 @@ class PlayerController(Entity):
         if self.velocity.length() > current_max_speed:
             self.velocity = self.velocity.normalized() * current_max_speed
 
-        camera.position += self.velocity * time.dt
+        self.position += self.velocity * time.dt

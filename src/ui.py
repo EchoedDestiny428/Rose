@@ -7,7 +7,7 @@ class UIManager(Entity):
         
         self.deadzone = 0.005
         self.cursor_pos = Vec2(0, 0)
-        self.max_radius = 0.1
+        self.max_radius = 0.2
         mouse.locked = True
 
         # Colors
@@ -33,13 +33,13 @@ class UIManager(Entity):
 
         self.player = None
 
-        self.speed_bar_bg = Entity(model='quad', color=self.amber_faint, scale=(0.012, 0.3), position=(-0.3, -0.15), origin=(0, -0.5), parent=camera.ui, z=1)
-        self.speed_bar = Entity(model='quad', color=self.cyan, scale=(0.012, 0.001), position=(-0.3, -0.15), origin=(0, -0.5), parent=camera.ui, z=0.5)
-        self.speed_label = Text(text='0\nm/s', position=(-0.3, -0.2), origin=(0, 0), color=self.amber, scale=0.8, parent=camera.ui)
+        self.speed_bar_bg = Entity(model='quad', color=self.amber_faint, scale=(0.008, 0.2), position=(-0.15, -0.1), origin=(0, -0.5), parent=camera.ui, z=1)
+        self.speed_bar = Entity(model='quad', color=self.cyan, scale=(0.008, 0.001), position=(-0.15, -0.1), origin=(0, -0.5), parent=camera.ui, z=0.5)
+        self.speed_label = Text(text='0\nm/s', position=(-0.15, -0.15), origin=(0, 0), color=self.amber, scale=0.6, parent=camera.ui)
 
-        self.boost_bar_bg = Entity(model='quad', color=self.amber_faint, scale=(0.012, 0.3), position=(0.3, -0.15), origin=(0, -0.5), parent=camera.ui, z=1)
-        self.boost_bar = Entity(model='quad', color=self.cyan, scale=(0.012, 0.001), position=(0.3, -0.15), origin=(0, -0.5), parent=camera.ui, z=0.5)
-        self.boost_label = Text(text='100%\nAB', position=(0.3, -0.2), origin=(0, 0), color=self.amber, scale=0.8, parent=camera.ui)
+        self.boost_bar_bg = Entity(model='quad', color=self.amber_faint, scale=(0.008, 0.2), position=(0.15, -0.1), origin=(0, -0.5), parent=camera.ui, z=1)
+        self.boost_bar = Entity(model='quad', color=self.cyan, scale=(0.008, 0.001), position=(0.15, -0.1), origin=(0, -0.5), parent=camera.ui, z=0.5)
+        self.boost_label = Text(text='100%\nAB', position=(0.15, -0.15), origin=(0, 0), color=self.amber, scale=0.6, parent=camera.ui)
 
         self.hud_text = Text(text='', position=(0.15, -0.25), origin=(0, 0), color=self.amber, scale=0.7, parent=camera.ui)
 
@@ -105,6 +105,16 @@ class UIManager(Entity):
         mouse.locked = not self.sliders_visible
         mouse.visible = self.sliders_visible
 
+    def set_hud_visible(self, visible):
+        hud_elements = [
+            self.center_crosshair, self.direction_arrow,
+            self.speed_bar_bg, self.speed_bar, self.speed_label,
+            self.boost_bar_bg, self.boost_bar, self.boost_label,
+            self.hud_text, self.prograde_marker, self.retrograde_marker
+        ]
+        for el in hud_elements:
+            el.enabled = visible
+
     def update(self):
         if held_keys['t']: self.sensitivity_slider.value += 100 * time.dt
         if held_keys['g']: self.sensitivity_slider.value -= 100 * time.dt
@@ -141,16 +151,18 @@ class UIManager(Entity):
             self.direction_arrow.color = color.clear
 
         if self.player:
+            if getattr(self.player, 'third_person', False):
+                return
             speed = self.player.velocity.length()
             accel = self.player.current_accel_magnitude
             max_spd = self.max_speed_slider.value
             max_accel = self.acceleration_slider.max
 
             speed_ratio = clamp(speed / max_spd, 0, 1) if max_spd > 0 else 0
-            self.speed_bar.scale_y = max(0.001, 0.3 * speed_ratio)
+            self.speed_bar.scale_y = max(0.001, 0.2 * speed_ratio)
             
             boost_ratio = clamp(self.player.boost_fuel / 100.0, 0, 1)
-            self.boost_bar.scale_y = max(0.001, 0.3 * boost_ratio)
+            self.boost_bar.scale_y = max(0.001, 0.2 * boost_ratio)
 
             self.speed_label.text = f"{int(speed)}\nm/s"
             self.boost_label.text = f"{int(self.player.boost_fuel)}%\nAB"
