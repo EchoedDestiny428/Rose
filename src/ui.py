@@ -133,8 +133,9 @@ class UIManager(Entity):
 
         camera.fov = self.fov_slider.value
 
-        self.cursor_pos.x += mouse.velocity[0]
-        self.cursor_pos.y += mouse.velocity[1]
+        if not held_keys['middle mouse']:
+            self.cursor_pos.x += mouse.velocity[0]
+            self.cursor_pos.y += mouse.velocity[1]
         
         distance = self.cursor_pos.length()
         

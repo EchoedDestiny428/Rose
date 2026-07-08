@@ -13,7 +13,12 @@ class PlayerController(Entity):
         self.gun_bottom = Entity(parent=self, model=Cylinder(16), color=gun_color, scale=gun_scale, position=(0, -0.6, 0.2), rotation=(90, 0, 0))
         
         self.third_person = False
-        camera.parent = self
+        self.third_person_zoom = 15.0
+        self.freecam_yaw = 0.0
+        self.freecam_pitch = 0.0
+        
+        self.camera_gimbal = Entity(parent=self)
+        camera.parent = self.camera_gimbal
         camera.position = (0, 0, 0)
         camera.rotation = (0, 0, 0)
         
@@ -37,13 +42,21 @@ class PlayerController(Entity):
         if key == 'v':
             self.third_person = not self.third_person
             if self.third_person:
-                camera.position = (0, 3, -15)
+                camera.position = (0, 3, -self.third_person_zoom)
                 camera.rotation = (10, 0, 0)
                 self.ui.set_hud_visible(False)
             else:
                 camera.position = (0, 0, 0)
                 camera.rotation = (0, 0, 0)
                 self.ui.set_hud_visible(True)
+                
+        if self.third_person:
+            if key == 'scroll up':
+                self.third_person_zoom = max(5.0, self.third_person_zoom - 2.0)
+                camera.position = (0, 3, -self.third_person_zoom)
+            elif key == 'scroll down':
+                self.third_person_zoom = min(50.0, self.third_person_zoom + 2.0)
+                camera.position = (0, 3, -self.third_person_zoom)
 
     def update(self):
         if held_keys['escape']:
@@ -93,6 +106,22 @@ class PlayerController(Entity):
             self.is_boosting = False
             self.boost_fuel += 15.0 * time.dt
             if self.boost_fuel > 100.0: self.boost_fuel = 100.0
+
+        # Freecam logic
+        if held_keys['middle mouse']:
+            self.freecam_yaw += mouse.velocity[0] * current_sens
+            self.freecam_pitch -= mouse.velocity[1] * current_sens
+            self.freecam_pitch = clamp(self.freecam_pitch, -89, 89)
+            
+            if not self.third_person:
+                self.freecam_yaw = clamp(self.freecam_yaw, -90, 90)
+            
+            self.camera_gimbal.rotation = (self.freecam_pitch, self.freecam_yaw, 0)
+        else:
+            if self.freecam_yaw != 0 or self.freecam_pitch != 0:
+                self.freecam_yaw = 0
+                self.freecam_pitch = 0
+                self.camera_gimbal.rotation = (0, 0, 0)
 
         roll_acceleration = current_roll_accel
         roll_input = 0
@@ -168,6 +197,7 @@ class PlayerController(Entity):
         
         # Switch to 3rd person view for death
         self.third_person = True
+        self.camera_gimbal.rotation = (0, 0, 0)
         camera.position = (0, 8, -30)
         camera.rotation = (15, 0, 0)
         self.ui.set_hud_visible(False)
@@ -197,6 +227,7 @@ class PlayerController(Entity):
         self.visible = True
         
         self.third_person = False
+        self.camera_gimbal.rotation = (0, 0, 0)
         camera.position = (0, 0, 0)
         camera.rotation = (0, 0, 0)
         self.ui.set_hud_visible(True)
