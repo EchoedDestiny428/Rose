@@ -13,9 +13,9 @@ from src.ui import UIManager
 from src.player import PlayerController
 
 clock_obj = ClockObject.get_global_clock()
-stars, dust, lumina, cubes = setup_environment()
 ui_manager = UIManager()
 player = PlayerController(ui_manager)
+stars, dust, lumina, cubes = setup_environment(player)
 ui_manager.player = player
 
 app.run()

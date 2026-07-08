@@ -66,7 +66,26 @@ class SpaceDust(Entity):
             if p.world_z - cam_pos.z > self.radius: p.z -= self.radius * 2
             elif p.world_z - cam_pos.z < -self.radius: p.z += self.radius * 2
 
-def setup_environment():
+class Obstacle(Entity):
+    def __init__(self, player):
+        super().__init__(
+            model='cube',
+            collider='box',
+            color=color.azure
+        )
+        self.player = player
+        self.respawn()
+
+    def respawn(self):
+        self.scale = (random.uniform(3, 8), random.uniform(3, 8), random.uniform(3, 8))
+        self.rotation = Vec3(random.uniform(0, 360), random.uniform(0, 360), random.uniform(0, 360))
+        
+        player_pos = self.player.world_position if self.player else Vec3(0,0,0)
+        dist = random.uniform(cfg.OBSTACLE_SPAWN_MIN_DIST, cfg.OBSTACLE_SPAWN_MAX_DIST)
+        dir_vec = Vec3(random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)).normalized()
+        self.position = player_pos + dir_vec * dist
+
+def setup_environment(player=None):
     window.color = color.black
     mouse.visible = False
     
@@ -75,18 +94,7 @@ def setup_environment():
 
     cubes = []
     for _ in range(cfg.CUBE_COUNT):
-        c = Entity(
-            model='cube',
-            collider='box',
-            color=color.azure,
-            scale=(random.uniform(3, 8), random.uniform(3, 8), random.uniform(3, 8)),
-            position=Vec3(
-                random.uniform(-40, 40),
-                random.uniform(-40, 40),
-                random.uniform(20, 80)
-            ),
-            rotation=Vec3(random.uniform(0, 360), random.uniform(0, 360), random.uniform(0, 360))
-        )
+        c = Obstacle(player)
         cubes.append(c)
 
     stars = Starfield()

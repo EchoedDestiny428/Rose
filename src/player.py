@@ -220,6 +220,8 @@ class PlayerController(Entity):
             impact_speed = self.velocity.length()
             if impact_speed >= cfg.DEATH_IMPACT_SPEED and not getattr(self, 'dead', False):
                 self.die()
+                if hasattr(hit_info.entity, 'respawn'):
+                    hit_info.entity.respawn()
             else:
                 self.position -= self.velocity * time.dt  # Revert to prevent clipping
                 if hit_info.normal.length() > 0:

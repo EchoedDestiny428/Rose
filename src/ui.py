@@ -96,7 +96,7 @@ class UIManager(Entity):
         self.toggle_sliders() # Start hidden for clean HUD
 
     def input(self, key):
-        if key == 'tab':
+        if key == 'm':
             self.toggle_sliders()
 
     def toggle_sliders(self):
