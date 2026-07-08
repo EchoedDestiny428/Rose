@@ -18,4 +18,8 @@ player = PlayerController(ui_manager)
 stars, dust, lumina, cubes = setup_environment(player)
 ui_manager.player = player
 
+player.obstacles = cubes
+for cube in cubes:
+    ui_manager.add_target_marker(cube)
+
 app.run()

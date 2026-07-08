@@ -2,6 +2,90 @@ from ursina import *
 import math
 import src.settings as cfg
 
+class TargetMarker(Entity):
+    def __init__(self, target_entity, **kwargs):
+        super().__init__(parent=camera.ui, **kwargs)
+        self.target = target_entity
+        
+        t = 0.0005
+        l = 0.01
+        
+        self.soft_parent = Entity(parent=self)
+        self.s_t = Entity(parent=self.soft_parent, model='quad', scale=(t, l), position=(0, l), color=cfg.UI_COLOR_CYAN)
+        self.s_b = Entity(parent=self.soft_parent, model='quad', scale=(t, l), position=(0, -l), color=cfg.UI_COLOR_CYAN)
+        self.s_r = Entity(parent=self.soft_parent, model='quad', scale=(l, t), position=(l, 0), color=cfg.UI_COLOR_CYAN)
+        self.s_l = Entity(parent=self.soft_parent, model='quad', scale=(l, t), position=(-l, 0), color=cfg.UI_COLOR_CYAN)
+        
+        self.hard_parent = Entity(parent=self)
+        c = cfg.UI_COLOR_AMBER
+        self.hl_v = Entity(parent=self.hard_parent, model='quad', color=c)
+        self.hl_t = Entity(parent=self.hard_parent, model='quad', color=c)
+        self.hl_b = Entity(parent=self.hard_parent, model='quad', color=c)
+        self.hr_v = Entity(parent=self.hard_parent, model='quad', color=c)
+        self.hr_t = Entity(parent=self.hard_parent, model='quad', color=c)
+        self.hr_b = Entity(parent=self.hard_parent, model='quad', color=c)
+        
+        self.is_hard_locked = False
+        
+    def update(self):
+        if not self.target or not self.target.enabled:
+            self.soft_parent.enabled = False
+            self.hard_parent.enabled = False
+            return
+            
+        dist = distance(self.target.world_position, camera.world_position)
+        if dist > cfg.RADAR_RANGE:
+            self.soft_parent.enabled = False
+            self.hard_parent.enabled = False
+            return
+            
+        v = self.target.world_position - camera.world_position
+        v_norm = v.normalized()
+        fwd_dot = v_norm.dot(camera.forward)
+        if fwd_dot <= 0:
+            self.soft_parent.enabled = False
+            self.hard_parent.enabled = False
+            return
+            
+        right_dot = v_norm.dot(camera.right)
+        up_dot = v_norm.dot(camera.up)
+        
+        tan_half_fov = math.tan(math.radians(camera.fov / 2))
+        c = 0.5 * window.aspect_ratio / tan_half_fov
+        self.position = Vec2(
+            (right_dot / fwd_dot) * c,
+            (up_dot / fwd_dot) * c
+        )
+        
+        size = 5.0 / dist
+        size = max(size, cfg.TARGET_MIN_SIZE)
+        
+        t = 0.001
+        self.s_t.y = size
+        self.s_b.y = -size
+        self.s_r.x = size
+        self.s_l.x = -size
+        
+        h = size * 2.0
+        w = size * 0.5
+        
+        self.hl_v.scale = (t, h)
+        self.hl_v.position = (-size, 0)
+        self.hl_t.scale = (w, t)
+        self.hl_t.position = (-size + w/2, h/2)
+        self.hl_b.scale = (w, t)
+        self.hl_b.position = (-size + w/2, -h/2)
+        
+        self.hr_v.scale = (t, h)
+        self.hr_v.position = (size, 0)
+        self.hr_t.scale = (w, t)
+        self.hr_t.position = (size - w/2, h/2)
+        self.hr_b.scale = (w, t)
+        self.hr_b.position = (size - w/2, -h/2)
+        
+        self.soft_parent.enabled = not self.is_hard_locked
+        self.hard_parent.enabled = self.is_hard_locked
+
 class UIManager(Entity):
     def __init__(self):
         super().__init__()
@@ -33,6 +117,7 @@ class UIManager(Entity):
         )
 
         self.player = None
+        self.target_markers = []
 
         self.speed_bar_bg = Entity(model='quad', color=self.amber_faint, scale=(0.008, 0.2), position=(-0.15, -0.1), origin=(0, -0.5), parent=camera.ui, z=1)
         self.speed_bar = Entity(model='quad', color=self.cyan, scale=(0.008, 0.001), position=(-0.15, -0.1), origin=(0, -0.5), parent=camera.ui, z=0.5)
@@ -106,6 +191,14 @@ class UIManager(Entity):
         mouse.locked = not self.sliders_visible
         mouse.visible = self.sliders_visible
 
+    def add_target_marker(self, entity):
+        marker = TargetMarker(entity)
+        self.target_markers.append(marker)
+
+    def set_hard_target(self, target_entity):
+        for marker in self.target_markers:
+            marker.is_hard_locked = (marker.target == target_entity)
+
     def set_hud_visible(self, visible):
         hud_elements = [
             self.center_crosshair, self.direction_arrow,
@@ -176,11 +269,12 @@ class UIManager(Entity):
                 right_dot = v_norm.dot(camera.right)
                 up_dot = v_norm.dot(camera.up)
                 
-                fov_factor = camera.fov / 90.0
+                tan_half_fov = math.tan(math.radians(camera.fov / 2))
+                c = 0.5 * window.aspect_ratio / tan_half_fov
                 
                 if fwd_dot > 0:
-                    self.prograde_marker.x = (right_dot / fwd_dot) * 0.5 / fov_factor
-                    self.prograde_marker.y = (up_dot / fwd_dot) * 0.5 / fov_factor
+                    self.prograde_marker.x = (right_dot / fwd_dot) * c
+                    self.prograde_marker.y = (up_dot / fwd_dot) * c
                     self.prograde_marker.enabled = True
                 else:
                     self.prograde_marker.enabled = False
@@ -191,8 +285,8 @@ class UIManager(Entity):
                 inv_up_dot = inv_v_norm.dot(camera.up)
                 
                 if inv_fwd_dot > 0:
-                    self.retrograde_marker.x = (inv_right_dot / inv_fwd_dot) * 0.5 / fov_factor
-                    self.retrograde_marker.y = (inv_up_dot / inv_fwd_dot) * 0.5 / fov_factor
+                    self.retrograde_marker.x = (inv_right_dot / inv_fwd_dot) * c
+                    self.retrograde_marker.y = (inv_up_dot / inv_fwd_dot) * c
                     self.retrograde_marker.enabled = True
                 else:
                     self.retrograde_marker.enabled = False

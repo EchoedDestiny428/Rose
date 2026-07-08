@@ -54,9 +54,30 @@ class PlayerController(Entity):
         
         # Weapons
         self.fire_cooldown = 0.0
+        self.obstacles = []
+        self.hard_target = None
 
     def input(self, key):
         if getattr(self, 'dead', False): return
+        
+        if key == 't':
+            best_dot = -1.0
+            best_cube = None
+            for cube in self.obstacles:
+                if not cube.enabled: continue
+                dist = distance(self.world_position, cube.world_position)
+                if dist <= cfg.RADAR_RANGE:
+                    v = cube.world_position - camera.world_position
+                    v_norm = v.normalized()
+                    fwd_dot = v_norm.dot(camera.forward)
+                    if fwd_dot > 0 and fwd_dot > best_dot:
+                        best_dot = fwd_dot
+                        best_cube = cube
+            
+            if best_cube:
+                self.hard_target = best_cube
+                self.ui.set_hard_target(best_cube)
+
         if key == 'c':
             self.coupled_mode = not self.coupled_mode
         if key == 'v':
