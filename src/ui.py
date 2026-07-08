@@ -10,14 +10,16 @@ class TargetMarker(Entity):
         t = 0.0005
         l = 0.01
         
+        self.lock_anim_scale = 1.0
+        
         self.soft_parent = Entity(parent=self)
-        self.s_t = Entity(parent=self.soft_parent, model='quad', scale=(t, l), position=(0, l), color=cfg.UI_COLOR_CYAN)
-        self.s_b = Entity(parent=self.soft_parent, model='quad', scale=(t, l), position=(0, -l), color=cfg.UI_COLOR_CYAN)
-        self.s_r = Entity(parent=self.soft_parent, model='quad', scale=(l, t), position=(l, 0), color=cfg.UI_COLOR_CYAN)
-        self.s_l = Entity(parent=self.soft_parent, model='quad', scale=(l, t), position=(-l, 0), color=cfg.UI_COLOR_CYAN)
+        c = cfg.UI_COLOR_RED
+        self.s_t = Entity(parent=self.soft_parent, model='quad', scale=(t, l), position=(0, l), color=c)
+        self.s_b = Entity(parent=self.soft_parent, model='quad', scale=(t, l), position=(0, -l), color=c)
+        self.s_r = Entity(parent=self.soft_parent, model='quad', scale=(l, t), position=(l, 0), color=c)
+        self.s_l = Entity(parent=self.soft_parent, model='quad', scale=(l, t), position=(-l, 0), color=c)
         
         self.hard_parent = Entity(parent=self)
-        c = cfg.UI_COLOR_AMBER
         self.hl_v = Entity(parent=self.hard_parent, model='quad', color=c)
         self.hl_t = Entity(parent=self.hard_parent, model='quad', color=c)
         self.hl_b = Entity(parent=self.hard_parent, model='quad', color=c)
@@ -25,7 +27,18 @@ class TargetMarker(Entity):
         self.hr_t = Entity(parent=self.hard_parent, model='quad', color=c)
         self.hr_b = Entity(parent=self.hard_parent, model='quad', color=c)
         
-        self.is_hard_locked = False
+        self._is_hard_locked = False
+        
+    @property
+    def is_hard_locked(self):
+        return self._is_hard_locked
+        
+    @is_hard_locked.setter
+    def is_hard_locked(self, value):
+        if value and not self._is_hard_locked:
+            self.lock_anim_scale = 2.0
+            self.animate('lock_anim_scale', 1.0, duration=0.4, curve=curve.out_back)
+        self._is_hard_locked = value
         
     def update(self):
         if not self.target or not self.target.enabled:
@@ -59,6 +72,8 @@ class TargetMarker(Entity):
         
         size = 5.0 / dist
         size = max(size, cfg.TARGET_MIN_SIZE)
+        
+        size = size * self.lock_anim_scale
         
         t = 0.001
         self.s_t.y = size
