@@ -139,9 +139,19 @@ class PlayerController(Entity):
             self.camera_gimbal.rotation = (self.freecam_pitch, self.freecam_yaw, 0)
         else:
             if self.freecam_yaw != 0 or self.freecam_pitch != 0:
-                self.freecam_yaw = 0
-                self.freecam_pitch = 0
-                self.camera_gimbal.rotation = (0, 0, 0)
+                self.freecam_yaw = lerp(self.freecam_yaw, 0, cfg.FREECAM_RETURN_SPEED * time.dt)
+                self.freecam_pitch = lerp(self.freecam_pitch, 0, cfg.FREECAM_RETURN_SPEED * time.dt)
+                
+                if abs(self.freecam_yaw) < 0.1 and abs(self.freecam_pitch) < 0.1:
+                    self.freecam_yaw = 0
+                    self.freecam_pitch = 0
+                    
+                self.camera_gimbal.rotation = (self.freecam_pitch, self.freecam_yaw, 0)
+
+        target_fov = self.ui.fov_slider.value
+        if held_keys['right mouse']:
+            target_fov = cfg.WEAPON_ZOOM_FOV
+        camera.fov = lerp(camera.fov, target_fov, cfg.WEAPON_ZOOM_SPEED * time.dt)
 
         if self.fire_cooldown > 0:
             self.fire_cooldown -= time.dt

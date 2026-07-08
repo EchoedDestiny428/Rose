@@ -132,8 +132,6 @@ class UIManager(Entity):
         if held_keys['o']: self.roll_slider.value += 50 * time.dt
         if held_keys['l']: self.roll_slider.value -= 50 * time.dt
 
-        camera.fov = self.fov_slider.value
-
         if not held_keys['middle mouse']:
             self.cursor_pos.x += mouse.velocity[0]
             self.cursor_pos.y += mouse.velocity[1]
