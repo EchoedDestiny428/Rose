@@ -99,8 +99,9 @@ class PlayerController(Entity):
         self.current_accel_magnitude = 0.0
 
         if acceleration.length() > 0:
-            acceleration = acceleration.normalized() * current_accel
-            self.current_accel_magnitude = current_accel
+            accel_mag = min(acceleration.length(), 1.0)
+            acceleration = acceleration.normalized() * (current_accel * accel_mag)
+            self.current_accel_magnitude = current_accel * accel_mag
             self.velocity += acceleration * time.dt
 
         if self.coupled_mode:
