@@ -10,62 +10,100 @@ class UIManager(Entity):
         self.max_radius = 0.1
         mouse.locked = True
 
+        # Colors
+        self.amber = color.rgba(255, 140, 0, 255)
+        self.amber_faint = color.rgba(255, 140, 0, 80)
+        self.cyan = color.rgba(0, 255, 255, 255)
+
         self.center_crosshair = Text(
-            text='+',
+            text='-   .   -',
             origin=(0, 0),
-            scale=2,
-            color=color.cyan,
+            scale=1.1,
+            color=self.amber,
             parent=camera.ui
         )
 
         self.direction_arrow = Text(
             text='^',
-            color=color.cyan,
-            scale=1.5,
+            color=self.cyan,
+            scale=1.1,
             origin=(0, 0),
             parent=camera.ui
         )
 
         self.player = None
 
-        self.speed_bar_bg = Entity(model='quad', color=color.rgba(255, 255, 255, 50), scale=(0.01, 0.3), position=(-0.10, -0.15), origin=(0, -0.5), parent=camera.ui, z=1)
-        self.speed_bar = Entity(model='quad', color=color.cyan, scale=(0.01, 0.001), position=(-0.10, -0.15), origin=(0, -0.5), parent=camera.ui, z=0.5)
+        self.speed_bar_bg = Entity(model='quad', color=self.amber_faint, scale=(0.012, 0.3), position=(-0.3, -0.15), origin=(0, -0.5), parent=camera.ui, z=1)
+        self.speed_bar = Entity(model='quad', color=self.cyan, scale=(0.012, 0.001), position=(-0.3, -0.15), origin=(0, -0.5), parent=camera.ui, z=0.5)
+        self.speed_label = Text(text='0\nm/s', position=(-0.3, -0.2), origin=(0, 0), color=self.amber, scale=0.8, parent=camera.ui)
 
-        self.accel_bar_bg = Entity(model='quad', color=color.rgba(255, 255, 255, 50), scale=(0.008, 0.15), position=(-0.08, -0.15), origin=(0, -0.5), parent=camera.ui, z=1)
-        self.accel_bar = Entity(model='quad', color=color.orange, scale=(0.008, 0.001), position=(-0.08, -0.15), origin=(0, -0.5), parent=camera.ui, z=0.5)
+        self.boost_bar_bg = Entity(model='quad', color=self.amber_faint, scale=(0.012, 0.3), position=(0.3, -0.15), origin=(0, -0.5), parent=camera.ui, z=1)
+        self.boost_bar = Entity(model='quad', color=self.cyan, scale=(0.012, 0.001), position=(0.3, -0.15), origin=(0, -0.5), parent=camera.ui, z=0.5)
+        self.boost_label = Text(text='100%\nAB', position=(0.3, -0.2), origin=(0, 0), color=self.amber, scale=0.8, parent=camera.ui)
 
-        self.hud_text = Text(text='', position=(0.10, 0.0), color=color.cyan, scale=0.8, parent=camera.ui)
+        self.hud_text = Text(text='', position=(0.15, -0.25), origin=(0, 0), color=self.amber, scale=0.7, parent=camera.ui)
 
-        self.prograde_marker = Text(text='[o]', color=color.green, scale=1.0, origin=(0,0), parent=camera.ui)
+        self.prograde_marker = Text(text='[o]', color=self.cyan, scale=0.8, origin=(0,0), parent=camera.ui)
         self.prograde_marker.enabled = False
 
-        self.retrograde_marker = Text(text='[x]', color=color.red, scale=1.0, origin=(0,0), parent=camera.ui)
+        self.retrograde_marker = Text(text='[x]', color=self.amber, scale=0.8, origin=(0,0), parent=camera.ui)
         self.retrograde_marker.enabled = False
 
         self.slider_bg = Entity(
             model='quad',
             color=color.rgba(255, 255, 255, 180),
-            scale=(0.7, 0.25),
-            position=(-0.55, -0.375),
+            scale=(0.7, 0.42),
+            position=(-0.55, -0.27),
             parent=camera.ui,
             z=1
         )
 
-        self.sensitivity_slider = Slider(min=100, max=300, default=200, text='Sensitivity', dynamic=True, position=(-0.65, -0.30), scale=0.7)
+        self.sensitivity_slider = Slider(min=100, max=300, default=200, text='Sensitivity', dynamic=True, position=(-0.65, -0.10), scale=0.7)
         self.sensitivity_slider.label.color = color.black
         self.sensitivity_slider.knob.text_entity.color = color.black
 
-        self.acceleration_slider = Slider(min=400, max=600, default=500, text='Acceleration', dynamic=True, position=(-0.65, -0.35), scale=0.7)
+        self.acceleration_slider = Slider(min=200, max=400, default=300, text='Acceleration', dynamic=True, position=(-0.65, -0.16), scale=0.7)
         self.acceleration_slider.label.color = color.black
         self.acceleration_slider.knob.text_entity.color = color.black
 
-        self.max_speed_slider = Slider(min=0, max=200, default=100, text='Max Speed', dynamic=True, position=(-0.65, -0.40), scale=0.7)
+        self.max_speed_slider = Slider(min=300, max=400, default=350, text='Max Speed', dynamic=True, position=(-0.65, -0.22), scale=0.7)
         self.max_speed_slider.label.color = color.black
         self.max_speed_slider.knob.text_entity.color = color.black
 
-        self.fov_slider = Slider(min=60, max=130, default=90, text='FOV', dynamic=True, position=(-0.65, -0.45), scale=0.7)
+        self.fov_slider = Slider(min=60, max=130, default=90, text='FOV', dynamic=True, position=(-0.65, -0.28), scale=0.7)
         self.fov_slider.label.color = color.black
         self.fov_slider.knob.text_entity.color = color.black
+
+        self.roll_slider = Slider(min=400, max=600, default=500, text='Roll Accel', dynamic=True, position=(-0.65, -0.34), scale=0.7)
+        self.roll_slider.label.color = color.black
+        self.roll_slider.knob.text_entity.color = color.black
+
+        self.roll_speed_slider = Slider(min=300, max=400, default=350, text='Max Roll', dynamic=True, position=(-0.65, -0.40), scale=0.7)
+        self.roll_speed_slider.label.color = color.black
+        self.roll_speed_slider.knob.text_entity.color = color.black
+
+        self.sliders_ui = [
+            self.slider_bg,
+            self.sensitivity_slider,
+            self.acceleration_slider,
+            self.max_speed_slider,
+            self.fov_slider,
+            self.roll_slider,
+            self.roll_speed_slider
+        ]
+        self.sliders_visible = True
+        self.toggle_sliders() # Start hidden for clean HUD
+
+    def input(self, key):
+        if key == 'tab':
+            self.toggle_sliders()
+
+    def toggle_sliders(self):
+        self.sliders_visible = not self.sliders_visible
+        for el in self.sliders_ui:
+            el.enabled = self.sliders_visible
+        mouse.locked = not self.sliders_visible
+        mouse.visible = self.sliders_visible
 
     def update(self):
         if held_keys['t']: self.sensitivity_slider.value += 100 * time.dt
@@ -79,6 +117,9 @@ class UIManager(Entity):
 
         if held_keys['i']: self.fov_slider.value += 30 * time.dt
         if held_keys['k']: self.fov_slider.value -= 30 * time.dt
+        
+        if held_keys['o']: self.roll_slider.value += 50 * time.dt
+        if held_keys['l']: self.roll_slider.value -= 50 * time.dt
 
         camera.fov = self.fov_slider.value
 
@@ -95,7 +136,7 @@ class UIManager(Entity):
             self.direction_arrow.position = self.cursor_pos
             angle = math.degrees(math.atan2(self.cursor_pos.y, self.cursor_pos.x))
             self.direction_arrow.rotation_z = 90 - angle
-            self.direction_arrow.color = color.cyan
+            self.direction_arrow.color = self.amber
         else:
             self.direction_arrow.color = color.clear
 
@@ -108,12 +149,14 @@ class UIManager(Entity):
             speed_ratio = clamp(speed / max_spd, 0, 1) if max_spd > 0 else 0
             self.speed_bar.scale_y = max(0.001, 0.3 * speed_ratio)
             
-            accel_ratio = clamp(accel / max_accel, 0, 1) if max_accel > 0 else 0
-            self.accel_bar.scale_y = max(0.001, 0.15 * accel_ratio)
+            boost_ratio = clamp(self.player.boost_fuel / 100.0, 0, 1)
+            self.boost_bar.scale_y = max(0.001, 0.3 * boost_ratio)
 
-            g_force = accel / 9.8
+            self.speed_label.text = f"{int(speed)}\nm/s"
+            self.boost_label.text = f"{int(self.player.boost_fuel)}%\nAB"
+
             cpl_str = "ON" if self.player.coupled_mode else "OFF"
-            self.hud_text.text = f"VEL: {int(speed)} m/s\nACC: {g_force:.1f} G\nCPL: {cpl_str}"
+            self.hud_text.text = f"CPL: {cpl_str}"
 
             if speed > 1.0:
                 v_norm = self.player.velocity.normalized()
@@ -153,3 +196,9 @@ class UIManager(Entity):
     
     def get_max_speed(self):
         return self.max_speed_slider.value
+
+    def get_roll_acceleration(self):
+        return self.roll_slider.value
+
+    def get_max_roll_speed(self):
+        return self.roll_speed_slider.value

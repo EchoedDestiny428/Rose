@@ -1,5 +1,10 @@
 from ursina import *
 from panda3d.core import ClockObject # pyrefly: ignore [missing-import]
+from panda3d.core import loadPrcFileData# pyrefly: ignore [missing-import]
+
+
+loadPrcFileData('', 'framebuffer-multisample 1')
+loadPrcFileData('', 'multisamples 8')
 
 app = Ursina()
 
