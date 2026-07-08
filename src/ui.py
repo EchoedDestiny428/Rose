@@ -1,19 +1,20 @@
 from ursina import *
 import math
+import src.settings as cfg
 
 class UIManager(Entity):
     def __init__(self):
         super().__init__()
         
-        self.deadzone = 0.005
+        self.deadzone = cfg.UI_DEADZONE
         self.cursor_pos = Vec2(0, 0)
-        self.max_radius = 0.2
+        self.max_radius = cfg.UI_MAX_RADIUS
         mouse.locked = True
 
         # Colors
-        self.amber = color.rgba(255, 140, 0, 255)
-        self.amber_faint = color.rgba(255, 140, 0, 80)
-        self.cyan = color.rgba(0, 255, 255, 255)
+        self.amber = cfg.UI_COLOR_AMBER
+        self.amber_faint = cfg.UI_COLOR_AMBER_FAINT
+        self.cyan = cfg.UI_COLOR_CYAN
 
         self.center_crosshair = Text(
             text='-   .   -',
@@ -58,27 +59,27 @@ class UIManager(Entity):
             z=1
         )
 
-        self.sensitivity_slider = Slider(min=100, max=300, default=200, text='Sensitivity', dynamic=True, position=(-0.65, -0.10), scale=0.7)
+        self.sensitivity_slider = Slider(min=cfg.SLIDER_SENSITIVITY[0], max=cfg.SLIDER_SENSITIVITY[1], default=cfg.SLIDER_SENSITIVITY[2], text='Sensitivity', dynamic=True, position=(-0.65, -0.10), scale=0.7)
         self.sensitivity_slider.label.color = color.black
         self.sensitivity_slider.knob.text_entity.color = color.black
 
-        self.acceleration_slider = Slider(min=200, max=400, default=300, text='Acceleration', dynamic=True, position=(-0.65, -0.16), scale=0.7)
+        self.acceleration_slider = Slider(min=cfg.SLIDER_ACCELERATION[0], max=cfg.SLIDER_ACCELERATION[1], default=cfg.SLIDER_ACCELERATION[2], text='Acceleration', dynamic=True, position=(-0.65, -0.16), scale=0.7)
         self.acceleration_slider.label.color = color.black
         self.acceleration_slider.knob.text_entity.color = color.black
 
-        self.max_speed_slider = Slider(min=300, max=400, default=350, text='Max Speed', dynamic=True, position=(-0.65, -0.22), scale=0.7)
+        self.max_speed_slider = Slider(min=cfg.SLIDER_MAX_SPEED[0], max=cfg.SLIDER_MAX_SPEED[1], default=cfg.SLIDER_MAX_SPEED[2], text='Max Speed', dynamic=True, position=(-0.65, -0.22), scale=0.7)
         self.max_speed_slider.label.color = color.black
         self.max_speed_slider.knob.text_entity.color = color.black
 
-        self.fov_slider = Slider(min=60, max=130, default=90, text='FOV', dynamic=True, position=(-0.65, -0.28), scale=0.7)
+        self.fov_slider = Slider(min=cfg.SLIDER_FOV[0], max=cfg.SLIDER_FOV[1], default=cfg.SLIDER_FOV[2], text='FOV', dynamic=True, position=(-0.65, -0.28), scale=0.7)
         self.fov_slider.label.color = color.black
         self.fov_slider.knob.text_entity.color = color.black
 
-        self.roll_slider = Slider(min=400, max=600, default=500, text='Roll Accel', dynamic=True, position=(-0.65, -0.34), scale=0.7)
+        self.roll_slider = Slider(min=cfg.SLIDER_ROLL_ACCEL[0], max=cfg.SLIDER_ROLL_ACCEL[1], default=cfg.SLIDER_ROLL_ACCEL[2], text='Roll Accel', dynamic=True, position=(-0.65, -0.34), scale=0.7)
         self.roll_slider.label.color = color.black
         self.roll_slider.knob.text_entity.color = color.black
 
-        self.roll_speed_slider = Slider(min=300, max=400, default=350, text='Max Roll', dynamic=True, position=(-0.65, -0.40), scale=0.7)
+        self.roll_speed_slider = Slider(min=cfg.SLIDER_MAX_ROLL_SPEED[0], max=cfg.SLIDER_MAX_ROLL_SPEED[1], default=cfg.SLIDER_MAX_ROLL_SPEED[2], text='Max Roll', dynamic=True, position=(-0.65, -0.40), scale=0.7)
         self.roll_speed_slider.label.color = color.black
         self.roll_speed_slider.knob.text_entity.color = color.black
 

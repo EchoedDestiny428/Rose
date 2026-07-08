@@ -1,9 +1,10 @@
 from ursina import *
 import random
 import math
+import src.settings as cfg
 
 class Starfield(Entity):
-    def __init__(self, num_stars=5000, radius=5000):
+    def __init__(self, num_stars=cfg.STARFIELD_NUM_STARS, radius=cfg.STARFIELD_RADIUS):
         super().__init__()
         verts = []
         colors = []
@@ -30,7 +31,7 @@ class Starfield(Entity):
         self.position = camera.world_position
 
 class SpaceDust(Entity):
-    def __init__(self, num_particles=300, radius=80):
+    def __init__(self, num_particles=cfg.SPACEDUST_NUM_PARTICLES, radius=cfg.SPACEDUST_RADIUS):
         super().__init__()
         self.radius = radius
         self.particles = []
@@ -73,7 +74,7 @@ def setup_environment():
     lumina.look_at(Vec3(1, -1, 1))
 
     cubes = []
-    for _ in range(3):
+    for _ in range(cfg.CUBE_COUNT):
         c = Entity(
             model='cube',
             collider='box',

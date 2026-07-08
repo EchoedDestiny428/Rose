@@ -1,8 +1,9 @@
 from ursina import *
+import src.settings as cfg
 
 class PlayerController(Entity):
     def __init__(self, ui_manager):
-        super().__init__(model='sphere', color=color.red, scale=1.0, collider='sphere')
+        super().__init__(model='sphere', color=color.red, scale=cfg.PLAYER_SCALE, collider='sphere')
         self.ui = ui_manager
         
         # Laser guns
@@ -13,25 +14,25 @@ class PlayerController(Entity):
         self.gun_bottom = Entity(parent=self, model=Cylinder(16), color=gun_color, scale=gun_scale, position=(0, -0.6, 0.2), rotation=(90, 0, 0))
         
         self.third_person = False
-        self.third_person_zoom = 15.0
+        self.third_person_zoom = cfg.THIRD_PERSON_ZOOM_DEFAULT
         self.freecam_yaw = 0.0
         self.freecam_pitch = 0.0
         
         self.camera_gimbal = Entity(parent=self)
         camera.parent = self.camera_gimbal
-        camera.position = (0, 0, 0)
-        camera.rotation = (0, 0, 0)
+        camera.position = cfg.PLAYER_START_POS
+        camera.rotation = cfg.PLAYER_START_ROT
         
         self.velocity = Vec3(0, 0, 0)
         self.roll_velocity = 0.0
         self.angular_vel_yaw = 0.0
         self.angular_vel_pitch = 0.0
-        self.drag = 2.0
+        self.drag = cfg.PLAYER_DRAG
         self.coupled_mode = True
         self.current_accel_magnitude = 0.0
 
         # Boost system
-        self.boost_fuel = 100.0
+        self.boost_fuel = cfg.BOOST_FUEL_MAX
         self.is_boosting = False
         self.dead = False
 
@@ -52,10 +53,10 @@ class PlayerController(Entity):
                 
         if self.third_person:
             if key == 'scroll up':
-                self.third_person_zoom = max(5.0, self.third_person_zoom - 2.0)
+                self.third_person_zoom = max(cfg.THIRD_PERSON_ZOOM_MIN, self.third_person_zoom - cfg.THIRD_PERSON_ZOOM_SPEED)
                 camera.position = (0, 3, -self.third_person_zoom)
             elif key == 'scroll down':
-                self.third_person_zoom = min(50.0, self.third_person_zoom + 2.0)
+                self.third_person_zoom = min(cfg.THIRD_PERSON_ZOOM_MAX, self.third_person_zoom + cfg.THIRD_PERSON_ZOOM_SPEED)
                 camera.position = (0, 3, -self.third_person_zoom)
 
     def update(self):
@@ -80,7 +81,7 @@ class PlayerController(Entity):
         target_yaw_vel = scaled_joy_x * current_sens
         target_pitch_vel = -scaled_joy_y * current_sens
 
-        turn_acceleration = 5.0
+        turn_acceleration = cfg.TURN_ACCELERATION
         self.angular_vel_yaw = lerp(self.angular_vel_yaw, target_yaw_vel, turn_acceleration * time.dt)
         self.angular_vel_pitch = lerp(self.angular_vel_pitch, target_pitch_vel, turn_acceleration * time.dt)
 
@@ -95,26 +96,26 @@ class PlayerController(Entity):
         # Boost logic
         if held_keys['left shift'] and self.boost_fuel > 0:
             self.is_boosting = True
-            self.boost_fuel -= 30.0 * time.dt
+            self.boost_fuel -= cfg.BOOST_DRAIN_RATE * time.dt
             if self.boost_fuel < 0: self.boost_fuel = 0
             
-            current_accel *= 2.0
-            current_roll_accel *= 2.0
-            current_max_speed += 100.0
-            current_max_roll_speed *= 1.5
+            current_accel *= cfg.BOOST_ACCEL_MULT
+            current_roll_accel *= cfg.BOOST_ROLL_ACCEL_MULT
+            current_max_speed += cfg.BOOST_SPEED_BONUS
+            current_max_roll_speed *= cfg.BOOST_MAX_ROLL_SPEED_MULT
         else:
             self.is_boosting = False
-            self.boost_fuel += 15.0 * time.dt
-            if self.boost_fuel > 100.0: self.boost_fuel = 100.0
+            self.boost_fuel += cfg.BOOST_RECHARGE_RATE * time.dt
+            if self.boost_fuel > cfg.BOOST_FUEL_MAX: self.boost_fuel = cfg.BOOST_FUEL_MAX
 
         # Freecam logic
         if held_keys['middle mouse']:
-            self.freecam_yaw += mouse.velocity[0] * current_sens
-            self.freecam_pitch -= mouse.velocity[1] * current_sens
-            self.freecam_pitch = clamp(self.freecam_pitch, -89, 89)
+            self.freecam_yaw += mouse.velocity[0] * current_sens * cfg.FREECAM_SENSITIVITY_MULT
+            self.freecam_pitch -= mouse.velocity[1] * current_sens * cfg.FREECAM_SENSITIVITY_MULT
+            self.freecam_pitch = clamp(self.freecam_pitch, -cfg.FREECAM_PITCH_LIMIT, cfg.FREECAM_PITCH_LIMIT)
             
             if not self.third_person:
-                self.freecam_yaw = clamp(self.freecam_yaw, -90, 90)
+                self.freecam_yaw = clamp(self.freecam_yaw, -cfg.FREECAM_YAW_LIMIT, cfg.FREECAM_YAW_LIMIT)
             
             self.camera_gimbal.rotation = (self.freecam_pitch, self.freecam_yaw, 0)
         else:
@@ -181,7 +182,7 @@ class PlayerController(Entity):
         hit_info = self.intersects()
         if hit_info.hit:
             impact_speed = self.velocity.length()
-            if impact_speed >= 20.0 and not getattr(self, 'dead', False):
+            if impact_speed >= cfg.DEATH_IMPACT_SPEED and not getattr(self, 'dead', False):
                 self.die()
             else:
                 self.position -= self.velocity * time.dt  # Revert to prevent clipping
@@ -204,15 +205,15 @@ class PlayerController(Entity):
         
         # Create explosion entity
         self.explosion = Entity(model='sphere', color=color.orange, scale=1, position=self.position)
-        self.explosion.animate_scale(20, duration=0.5, curve=curve.out_expo)
-        self.explosion.animate_color(color.rgba(255, 100, 0, 0), duration=1.0)
-        destroy(self.explosion, delay=1.0)
+        self.explosion.animate_scale(cfg.DEATH_EXPLOSION_SCALE, duration=cfg.DEATH_EXPLOSION_DURATION, curve=curve.out_expo)
+        self.explosion.animate_color(color.rgba(255, 100, 0, 0), duration=cfg.DEATH_FADE_DURATION)
+        destroy(self.explosion, delay=cfg.DEATH_FADE_DURATION)
         
         # Hide player model
         self.visible = False
         
         # Schedule respawn
-        invoke(self.respawn, delay=2.0)
+        invoke(self.respawn, delay=cfg.DEATH_RESPAWN_DELAY)
 
     def respawn(self):
         self.dead = False
@@ -222,7 +223,7 @@ class PlayerController(Entity):
         self.roll_velocity = 0
         self.angular_vel_yaw = 0
         self.angular_vel_pitch = 0
-        self.boost_fuel = 100.0
+        self.boost_fuel = cfg.BOOST_FUEL_MAX
         
         self.visible = True
         
