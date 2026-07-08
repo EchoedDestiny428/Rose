@@ -28,6 +28,24 @@ class UIManager(Entity):
             parent=camera.ui
         )
 
+        self.player = None
+
+        # Advanced HUD Elements
+        # Advanced HUD Elements
+        self.speed_bar_bg = Entity(model='quad', color=color.rgba(255, 255, 255, 50), scale=(0.01, 0.3), position=(-0.10, -0.15), origin=(0, -0.5), parent=camera.ui, z=1)
+        self.speed_bar = Entity(model='quad', color=color.cyan, scale=(0.01, 0.001), position=(-0.10, -0.15), origin=(0, -0.5), parent=camera.ui, z=0.5)
+
+        self.accel_bar_bg = Entity(model='quad', color=color.rgba(255, 255, 255, 50), scale=(0.008, 0.15), position=(-0.08, -0.15), origin=(0, -0.5), parent=camera.ui, z=1)
+        self.accel_bar = Entity(model='quad', color=color.orange, scale=(0.008, 0.001), position=(-0.08, -0.15), origin=(0, -0.5), parent=camera.ui, z=0.5)
+
+        self.hud_text = Text(text='', position=(0.10, 0.0), color=color.cyan, scale=0.8, parent=camera.ui)
+
+        self.prograde_marker = Text(text='[o]', color=color.green, scale=1.0, origin=(0,0), parent=camera.ui)
+        self.prograde_marker.enabled = False
+
+        self.retrograde_marker = Text(text='[x]', color=color.red, scale=1.0, origin=(0,0), parent=camera.ui)
+        self.retrograde_marker.enabled = False
+
         # Background Box
         self.slider_bg = Entity(
             model='quad',
@@ -88,6 +106,58 @@ class UIManager(Entity):
             self.direction_arrow.color = color.cyan
         else:
             self.direction_arrow.color = color.clear
+
+        # Advanced HUD Updates
+        if self.player:
+            speed = self.player.velocity.length()
+            accel = self.player.current_accel_magnitude
+            max_spd = self.max_speed_slider.value
+            max_accel = self.acceleration_slider.max
+
+            # Update Bars
+            speed_ratio = clamp(speed / max_spd, 0, 1) if max_spd > 0 else 0
+            self.speed_bar.scale_y = max(0.001, 0.3 * speed_ratio)
+            
+            accel_ratio = clamp(accel / max_accel, 0, 1) if max_accel > 0 else 0
+            self.accel_bar.scale_y = max(0.001, 0.15 * accel_ratio)
+
+            # Update Text (1 G = 9.8 m/s^2)
+            g_force = accel / 9.8
+            cpl_str = "ON" if self.player.coupled_mode else "OFF"
+            self.hud_text.text = f"VEL: {int(speed)} m/s\nACC: {g_force:.1f} G\nCPL: {cpl_str}"
+
+            # Prograde Marker
+            if speed > 1.0:
+                v_norm = self.player.velocity.normalized()
+                fwd_dot = v_norm.dot(camera.forward)
+                right_dot = v_norm.dot(camera.right)
+                up_dot = v_norm.dot(camera.up)
+                
+                fov_factor = camera.fov / 90.0
+                
+                # Prograde
+                if fwd_dot > 0:
+                    self.prograde_marker.x = (right_dot / fwd_dot) * 0.5 / fov_factor
+                    self.prograde_marker.y = (up_dot / fwd_dot) * 0.5 / fov_factor
+                    self.prograde_marker.enabled = True
+                else:
+                    self.prograde_marker.enabled = False
+
+                # Retrograde
+                inv_v_norm = -v_norm
+                inv_fwd_dot = inv_v_norm.dot(camera.forward)
+                inv_right_dot = inv_v_norm.dot(camera.right)
+                inv_up_dot = inv_v_norm.dot(camera.up)
+                
+                if inv_fwd_dot > 0:
+                    self.retrograde_marker.x = (inv_right_dot / inv_fwd_dot) * 0.5 / fov_factor
+                    self.retrograde_marker.y = (inv_up_dot / inv_fwd_dot) * 0.5 / fov_factor
+                    self.retrograde_marker.enabled = True
+                else:
+                    self.retrograde_marker.enabled = False
+            else:
+                self.prograde_marker.enabled = False
+                self.retrograde_marker.enabled = False
 
     def get_sensitivity(self):
         return self.sensitivity_slider.value

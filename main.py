@@ -20,5 +20,6 @@ ui_manager = UIManager()
 
 # Initialize the Player Controller (6DOF flight, physics, inputs)
 player = PlayerController(ui_manager)
+ui_manager.player = player
 
 app.run()

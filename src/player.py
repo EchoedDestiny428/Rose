@@ -7,8 +7,11 @@ class PlayerController(Entity):
         
         self.velocity = Vec3(0, 0, 0)
         self.roll_velocity = 0.0
+        self.angular_vel_yaw = 0.0
+        self.angular_vel_pitch = 0.0
         self.drag = 2.0
         self.coupled_mode = True
+        self.current_accel_magnitude = 0.0
 
     def input(self, key):
         if key == 'c':
@@ -32,8 +35,16 @@ class PlayerController(Entity):
         scaled_joy_x = joy_x * scale_factor
         scaled_joy_y = joy_y * scale_factor
 
-        delta_yaw = scaled_joy_x * current_sens * time.dt
-        delta_pitch = -scaled_joy_y * current_sens * time.dt
+        target_yaw_vel = scaled_joy_x * current_sens
+        target_pitch_vel = -scaled_joy_y * current_sens
+
+        # Apply rotational momentum
+        turn_acceleration = 5.0
+        self.angular_vel_yaw = lerp(self.angular_vel_yaw, target_yaw_vel, turn_acceleration * time.dt)
+        self.angular_vel_pitch = lerp(self.angular_vel_pitch, target_pitch_vel, turn_acceleration * time.dt)
+
+        delta_yaw = self.angular_vel_yaw * time.dt
+        delta_pitch = self.angular_vel_pitch * time.dt
 
         current_accel = self.ui.get_acceleration()
         current_max_speed = self.ui.get_max_speed()
@@ -65,15 +76,22 @@ class PlayerController(Entity):
         if held_keys['space']: acceleration += camera.up
         if held_keys['left shift'] or held_keys['control']: acceleration += camera.down
 
+        self.current_accel_magnitude = 0.0
+
         if acceleration.length() > 0:
-            acceleration = acceleration.normalized() * current_accel * time.dt
-            self.velocity += acceleration
+            acceleration = acceleration.normalized() * current_accel
+            self.current_accel_magnitude = current_accel
+            self.velocity += acceleration * time.dt
 
         if self.coupled_mode:
             if acceleration.length() == 0:
+                old_vel = Vec3(self.velocity)
                 self.velocity = lerp(self.velocity, Vec3(0, 0, 0), self.drag * time.dt)
                 if self.velocity.length() < 0.1:
                     self.velocity = Vec3(0, 0, 0)
+                # Calculate braking acceleration
+                if time.dt > 0:
+                    self.current_accel_magnitude = (old_vel - self.velocity).length() / time.dt
 
         if self.velocity.length() > current_max_speed:
             self.velocity = self.velocity.normalized() * current_max_speed
