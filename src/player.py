@@ -1,5 +1,21 @@
 from ursina import *
 import src.settings as cfg
+import random
+
+class LaserProjectile(Entity):
+    def __init__(self, position, velocity):
+        super().__init__(
+            model='cube',
+            color=cfg.WEAPON_LASER_COLOR,
+            scale=(0.1, 0.1, 4.0),
+            position=position
+        )
+        self.velocity = velocity
+        self.look_at(self.position + self.velocity)
+        destroy(self, delay=cfg.WEAPON_LASER_LIFESPAN)
+
+    def update(self):
+        self.position += self.velocity * time.dt
 
 class PlayerController(Entity):
     def __init__(self, ui_manager):
@@ -35,6 +51,9 @@ class PlayerController(Entity):
         self.boost_fuel = cfg.BOOST_FUEL_MAX
         self.is_boosting = False
         self.dead = False
+        
+        # Weapons
+        self.fire_cooldown = 0.0
 
     def input(self, key):
         if getattr(self, 'dead', False): return
@@ -123,6 +142,13 @@ class PlayerController(Entity):
                 self.freecam_yaw = 0
                 self.freecam_pitch = 0
                 self.camera_gimbal.rotation = (0, 0, 0)
+
+        if self.fire_cooldown > 0:
+            self.fire_cooldown -= time.dt
+
+        if held_keys['left mouse'] and mouse.locked and self.fire_cooldown <= 0:
+            self.fire_cooldown = cfg.WEAPON_FIRE_RATE
+            self.fire_lasers()
 
         roll_acceleration = current_roll_accel
         roll_input = 0
@@ -232,3 +258,18 @@ class PlayerController(Entity):
         camera.position = (0, 0, 0)
         camera.rotation = (0, 0, 0)
         self.ui.set_hud_visible(True)
+
+    def fire_lasers(self):
+        guns = [self.gun_left, self.gun_right, self.gun_bottom]
+        for gun in guns:
+            spawn_pos = gun.world_position + self.forward * 0.3
+            
+            spread_x = random.uniform(-cfg.WEAPON_LASER_SPREAD, cfg.WEAPON_LASER_SPREAD)
+            spread_y = random.uniform(-cfg.WEAPON_LASER_SPREAD, cfg.WEAPON_LASER_SPREAD)
+            spread_z = random.uniform(-cfg.WEAPON_LASER_SPREAD, cfg.WEAPON_LASER_SPREAD)
+            spread_vec = Vec3(spread_x, spread_y, spread_z)
+            
+            fire_dir = (self.forward + spread_vec).normalized()
+            proj_vel = self.velocity + fire_dir * cfg.WEAPON_LASER_SPEED
+            
+            LaserProjectile(position=spawn_pos, velocity=proj_vel)
