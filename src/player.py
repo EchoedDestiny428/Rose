@@ -16,7 +16,6 @@ class PlayerController(Entity):
     def input(self, key):
         if key == 'c':
             self.coupled_mode = not self.coupled_mode
-            print(f"Coupled Mode: {'ON' if self.coupled_mode else 'OFF'}")
 
     def update(self):
         if held_keys['escape']:
@@ -30,7 +29,6 @@ class PlayerController(Entity):
 
         current_sens = self.ui.get_sensitivity()
         
-        # Scale the virtual cursor so max_radius yields a 0.5 equivalent input
         scale_factor = 0.5 / self.ui.max_radius
         scaled_joy_x = joy_x * scale_factor
         scaled_joy_y = joy_y * scale_factor
@@ -38,7 +36,6 @@ class PlayerController(Entity):
         target_yaw_vel = scaled_joy_x * current_sens
         target_pitch_vel = -scaled_joy_y * current_sens
 
-        # Apply rotational momentum
         turn_acceleration = 5.0
         self.angular_vel_yaw = lerp(self.angular_vel_yaw, target_yaw_vel, turn_acceleration * time.dt)
         self.angular_vel_pitch = lerp(self.angular_vel_pitch, target_pitch_vel, turn_acceleration * time.dt)
@@ -67,7 +64,6 @@ class PlayerController(Entity):
         delta_roll = self.roll_velocity * time.dt
         camera.rotate((delta_pitch, delta_yaw, delta_roll))
 
-        # Translation
         acceleration = Vec3(0, 0, 0)
         if held_keys['w']: acceleration += camera.forward
         if held_keys['s']: acceleration += camera.back
@@ -89,7 +85,7 @@ class PlayerController(Entity):
                 self.velocity = lerp(self.velocity, Vec3(0, 0, 0), self.drag * time.dt)
                 if self.velocity.length() < 0.1:
                     self.velocity = Vec3(0, 0, 0)
-                # Calculate braking acceleration
+                
                 if time.dt > 0:
                     self.current_accel_magnitude = (old_vel - self.velocity).length() / time.dt
 

@@ -10,7 +10,6 @@ class UIManager(Entity):
         self.max_radius = 0.1
         mouse.locked = True
 
-        # Crosshair
         self.center_crosshair = Text(
             text='+',
             origin=(0, 0),
@@ -19,7 +18,6 @@ class UIManager(Entity):
             parent=camera.ui
         )
 
-        # Direction Arrow
         self.direction_arrow = Text(
             text='^',
             color=color.cyan,
@@ -30,8 +28,6 @@ class UIManager(Entity):
 
         self.player = None
 
-        # Advanced HUD Elements
-        # Advanced HUD Elements
         self.speed_bar_bg = Entity(model='quad', color=color.rgba(255, 255, 255, 50), scale=(0.01, 0.3), position=(-0.10, -0.15), origin=(0, -0.5), parent=camera.ui, z=1)
         self.speed_bar = Entity(model='quad', color=color.cyan, scale=(0.01, 0.001), position=(-0.10, -0.15), origin=(0, -0.5), parent=camera.ui, z=0.5)
 
@@ -46,7 +42,6 @@ class UIManager(Entity):
         self.retrograde_marker = Text(text='[x]', color=color.red, scale=1.0, origin=(0,0), parent=camera.ui)
         self.retrograde_marker.enabled = False
 
-        # Background Box
         self.slider_bg = Entity(
             model='quad',
             color=color.rgba(255, 255, 255, 180),
@@ -56,7 +51,6 @@ class UIManager(Entity):
             z=1
         )
 
-        # Sliders
         self.sensitivity_slider = Slider(min=100, max=300, default=200, text='Sensitivity', dynamic=True, position=(-0.65, -0.30), scale=0.7)
         self.sensitivity_slider.label.color = color.black
         self.sensitivity_slider.knob.text_entity.color = color.black
@@ -74,7 +68,6 @@ class UIManager(Entity):
         self.fov_slider.knob.text_entity.color = color.black
 
     def update(self):
-        # Keyboard slider controls
         if held_keys['t']: self.sensitivity_slider.value += 100 * time.dt
         if held_keys['g']: self.sensitivity_slider.value -= 100 * time.dt
         
@@ -89,7 +82,6 @@ class UIManager(Entity):
 
         camera.fov = self.fov_slider.value
 
-        # Mouse direction tracking
         self.cursor_pos.x += mouse.velocity[0]
         self.cursor_pos.y += mouse.velocity[1]
         
@@ -107,26 +99,22 @@ class UIManager(Entity):
         else:
             self.direction_arrow.color = color.clear
 
-        # Advanced HUD Updates
         if self.player:
             speed = self.player.velocity.length()
             accel = self.player.current_accel_magnitude
             max_spd = self.max_speed_slider.value
             max_accel = self.acceleration_slider.max
 
-            # Update Bars
             speed_ratio = clamp(speed / max_spd, 0, 1) if max_spd > 0 else 0
             self.speed_bar.scale_y = max(0.001, 0.3 * speed_ratio)
             
             accel_ratio = clamp(accel / max_accel, 0, 1) if max_accel > 0 else 0
             self.accel_bar.scale_y = max(0.001, 0.15 * accel_ratio)
 
-            # Update Text (1 G = 9.8 m/s^2)
             g_force = accel / 9.8
             cpl_str = "ON" if self.player.coupled_mode else "OFF"
             self.hud_text.text = f"VEL: {int(speed)} m/s\nACC: {g_force:.1f} G\nCPL: {cpl_str}"
 
-            # Prograde Marker
             if speed > 1.0:
                 v_norm = self.player.velocity.normalized()
                 fwd_dot = v_norm.dot(camera.forward)
@@ -135,7 +123,6 @@ class UIManager(Entity):
                 
                 fov_factor = camera.fov / 90.0
                 
-                # Prograde
                 if fwd_dot > 0:
                     self.prograde_marker.x = (right_dot / fwd_dot) * 0.5 / fov_factor
                     self.prograde_marker.y = (up_dot / fwd_dot) * 0.5 / fov_factor
@@ -143,7 +130,6 @@ class UIManager(Entity):
                 else:
                     self.prograde_marker.enabled = False
 
-                # Retrograde
                 inv_v_norm = -v_norm
                 inv_fwd_dot = inv_v_norm.dot(camera.forward)
                 inv_right_dot = inv_v_norm.dot(camera.right)
