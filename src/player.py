@@ -3,7 +3,7 @@ import src.settings as cfg
 import random
 
 class LaserProjectile(Entity):
-    def __init__(self, position, velocity):
+    def __init__(self, position, velocity, owner=None):
         super().__init__(
             model='cube',
             color=cfg.WEAPON_LASER_COLOR,
@@ -11,10 +11,19 @@ class LaserProjectile(Entity):
             position=position
         )
         self.velocity = velocity
+        self.owner = owner
         self.look_at(self.position + self.velocity)
         destroy(self, delay=cfg.WEAPON_LASER_LIFESPAN)
 
     def update(self):
+        dist = self.velocity.length() * time.dt
+        hit_info = raycast(self.position, self.velocity.normalized(), distance=dist, ignore=(self, self.owner))
+        if hit_info.hit:
+            if hasattr(hit_info.entity, 'take_damage'):
+                hit_info.entity.take_damage(25.0)
+            destroy(self)
+            return
+            
         self.position += self.velocity * time.dt
 
 class PlayerController(Entity):
@@ -305,4 +314,4 @@ class PlayerController(Entity):
             fire_dir = (self.forward + spread_vec).normalized()
             proj_vel = self.velocity + fire_dir * cfg.WEAPON_LASER_SPEED
             
-            LaserProjectile(position=spawn_pos, velocity=proj_vel)
+            LaserProjectile(position=spawn_pos, velocity=proj_vel, owner=self)

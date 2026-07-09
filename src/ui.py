@@ -52,12 +52,14 @@ class TargetMarker(Entity):
         if not self.target or not self.target.enabled:
             self.soft_parent.enabled = False
             self.hard_parent.enabled = False
+            self.pip_parent.enabled = False
             return
             
         dist = distance(self.target.world_position, camera.world_position)
         if dist > cfg.RADAR_RANGE:
             self.soft_parent.enabled = False
             self.hard_parent.enabled = False
+            self.pip_parent.enabled = False
             return
             
         v = self.target.world_position - camera.world_position
@@ -66,6 +68,7 @@ class TargetMarker(Entity):
         if fwd_dot <= 0:
             self.soft_parent.enabled = False
             self.hard_parent.enabled = False
+            self.pip_parent.enabled = False
             return
             
         right_dot = v_norm.dot(camera.right)
