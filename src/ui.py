@@ -154,7 +154,7 @@ class TargetMarker(Entity):
                         else:
                             self.pip_parent.rotation_z = 0
                             
-                        pip_size = max(size, 0.015)
+                        pip_size = max(size * 0.75, 0.015)
                         self.pip_l.position = (-pip_size, 0)
                         self.pip_r.position = (pip_size, 0)
                         

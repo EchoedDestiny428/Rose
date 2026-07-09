@@ -71,15 +71,17 @@ class Obstacle(Entity):
         super().__init__(
             model='cube',
             collider='box',
-            color=color.green
+            color=color.white
         )
+        self.transparent = True
         self.player = player
         self.max_health = 1000.0
         self.respawn()
 
     def respawn(self):
         self.health = self.max_health
-        self.color = color.green
+        self.color = color.white
+        self.alpha = 1.0
         self.scale = (random.uniform(12, 32), random.uniform(12, 32), random.uniform(12, 32))
         self.rotation = Vec3(random.uniform(0, 360), random.uniform(0, 360), random.uniform(0, 360))
         
@@ -90,11 +92,11 @@ class Obstacle(Entity):
 
     def take_damage(self, amount):
         self.health -= amount
-        if self.health <= 0:
+        hp_ratio = self.health / self.max_health
+        if hp_ratio <= 0.2:
             self.respawn()
         else:
-            hp_ratio = max(0, self.health / self.max_health)
-            self.color = color.rgba(1.0 - hp_ratio, hp_ratio, 0.0, 1.0)
+            self.alpha = hp_ratio
 
 def setup_environment(player=None):
     window.color = color.black
