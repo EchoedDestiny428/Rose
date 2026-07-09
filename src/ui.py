@@ -3,9 +3,10 @@ import math
 import src.settings as cfg
 
 class TargetMarker(Entity):
-    def __init__(self, target_entity, **kwargs):
+    def __init__(self, target_entity, player=None, **kwargs):
         super().__init__(parent=camera.ui, **kwargs)
         self.target = target_entity
+        self.player = player
         
         t = 0.0005
         l = 0.01
@@ -20,12 +21,19 @@ class TargetMarker(Entity):
         self.s_l = Entity(parent=self.soft_parent, model='quad', scale=(l, t), position=(-l, 0), color=c)
         
         self.hard_parent = Entity(parent=self)
-        self.hl_v = Entity(parent=self.hard_parent, model='quad', color=c)
+        self.hl_vt = Entity(parent=self.hard_parent, model='quad', color=c)
+        self.hl_vb = Entity(parent=self.hard_parent, model='quad', color=c)
         self.hl_t = Entity(parent=self.hard_parent, model='quad', color=c)
         self.hl_b = Entity(parent=self.hard_parent, model='quad', color=c)
-        self.hr_v = Entity(parent=self.hard_parent, model='quad', color=c)
+        self.hr_vt = Entity(parent=self.hard_parent, model='quad', color=c)
+        self.hr_vb = Entity(parent=self.hard_parent, model='quad', color=c)
         self.hr_t = Entity(parent=self.hard_parent, model='quad', color=c)
         self.hr_b = Entity(parent=self.hard_parent, model='quad', color=c)
+        
+        self.pip_parent = Entity(parent=self)
+        self.pip_o = Text(text='o', parent=self.pip_parent, origin=(0, 0), color=c, scale=0.8)
+        self.pip_l = Entity(parent=self.pip_parent, model='quad', color=c, scale=(0.001, 0.015))
+        self.pip_r = Entity(parent=self.pip_parent, model='quad', color=c, scale=(0.001, 0.015))
         
         self._is_hard_locked = False
         
@@ -64,10 +72,10 @@ class TargetMarker(Entity):
         up_dot = v_norm.dot(camera.up)
         
         tan_half_fov = math.tan(math.radians(camera.fov / 2))
-        c = 0.5 * window.aspect_ratio / tan_half_fov
+        c_factor = 0.5 * window.aspect_ratio / tan_half_fov
         self.position = Vec2(
-            (right_dot / fwd_dot) * c,
-            (up_dot / fwd_dot) * c
+            (right_dot / fwd_dot) * c_factor,
+            (up_dot / fwd_dot) * c_factor
         )
         
         size = 5.0 / dist
@@ -83,23 +91,87 @@ class TargetMarker(Entity):
         
         h = size * 2.0
         w = size * 0.5
+        corner_h = size * 0.5
+        offset = size * 1.5
         
-        self.hl_v.scale = (t, h)
-        self.hl_v.position = (-size, 0)
+        self.hl_vt.scale = (t, corner_h)
+        self.hl_vt.position = (-offset, h/2 - corner_h/2)
         self.hl_t.scale = (w, t)
-        self.hl_t.position = (-size + w/2, h/2)
-        self.hl_b.scale = (w, t)
-        self.hl_b.position = (-size + w/2, -h/2)
+        self.hl_t.position = (-offset + w/2, h/2)
         
-        self.hr_v.scale = (t, h)
-        self.hr_v.position = (size, 0)
+        self.hl_vb.scale = (t, corner_h)
+        self.hl_vb.position = (-offset, -h/2 + corner_h/2)
+        self.hl_b.scale = (w, t)
+        self.hl_b.position = (-offset + w/2, -h/2)
+        
+        self.hr_vt.scale = (t, corner_h)
+        self.hr_vt.position = (offset, h/2 - corner_h/2)
         self.hr_t.scale = (w, t)
-        self.hr_t.position = (size - w/2, h/2)
+        self.hr_t.position = (offset - w/2, h/2)
+        
+        self.hr_vb.scale = (t, corner_h)
+        self.hr_vb.position = (offset, -h/2 + corner_h/2)
         self.hr_b.scale = (w, t)
-        self.hr_b.position = (size - w/2, -h/2)
+        self.hr_b.position = (offset - w/2, -h/2)
         
         self.soft_parent.enabled = not self.is_hard_locked
         self.hard_parent.enabled = self.is_hard_locked
+
+        if self.player and self.is_hard_locked:
+            R = self.target.world_position - camera.world_position
+            V_p = self.player.velocity
+            S = cfg.WEAPON_LASER_SPEED
+            
+            A = R.length_squared()
+            B = -2 * R.dot(V_p)
+            C_math = V_p.length_squared() - S**2
+            
+            D = B**2 - 4*A*C_math
+            if D >= 0 and A > 0.001:
+                u = (-B + math.sqrt(D)) / (2*A)
+                if u > 0:
+                    t_aim = 1 / u
+                    V_b = R / t_aim
+                    d = (V_b - V_p).normalized()
+                    
+                    pip_fwd_dot = d.dot(camera.forward)
+                    if pip_fwd_dot > 0:
+                        pip_right = d.dot(camera.right)
+                        pip_up = d.dot(camera.up)
+                        
+                        pip_x = (pip_right / pip_fwd_dot) * c_factor
+                        pip_y = (pip_up / pip_fwd_dot) * c_factor
+                        
+                        self.pip_parent.position = Vec2(pip_x - self.position.x, pip_y - self.position.y)
+                        
+                        if self.pip_parent.position.length_squared() > 0.000001:
+                            angle = math.degrees(math.atan2(self.pip_parent.position.y, self.pip_parent.position.x))
+                            self.pip_parent.rotation_z = -(angle - 90)
+                        else:
+                            self.pip_parent.rotation_z = 0
+                            
+                        self.pip_l.position = (-size, 0)
+                        self.pip_r.position = (size, 0)
+                        
+                        pip_dist_from_center = Vec2(pip_x, pip_y).length()
+                        if pip_dist_from_center < size * 1.2:
+                            pip_c = cfg.UI_COLOR_GREEN
+                        else:
+                            pip_c = cfg.UI_COLOR_RED
+                            
+                        self.pip_o.color = pip_c
+                        self.pip_l.color = pip_c
+                        self.pip_r.color = pip_c
+                        
+                        self.pip_parent.enabled = True
+                    else:
+                        self.pip_parent.enabled = False
+                else:
+                    self.pip_parent.enabled = False
+            else:
+                self.pip_parent.enabled = False
+        else:
+            self.pip_parent.enabled = False
 
 class UIManager(Entity):
     def __init__(self):
@@ -207,7 +279,7 @@ class UIManager(Entity):
         mouse.visible = self.sliders_visible
 
     def add_target_marker(self, entity):
-        marker = TargetMarker(entity)
+        marker = TargetMarker(entity, player=self.player)
         self.target_markers.append(marker)
 
     def set_hard_target(self, target_entity):
