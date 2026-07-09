@@ -80,7 +80,7 @@ class Obstacle(Entity):
     def respawn(self):
         self.health = self.max_health
         self.color = color.green
-        self.scale = (random.uniform(3, 8), random.uniform(3, 8), random.uniform(3, 8))
+        self.scale = (random.uniform(12, 32), random.uniform(12, 32), random.uniform(12, 32))
         self.rotation = Vec3(random.uniform(0, 360), random.uniform(0, 360), random.uniform(0, 360))
         
         player_pos = self.player.world_position if self.player else Vec3(0,0,0)
