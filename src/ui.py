@@ -154,8 +154,9 @@ class TargetMarker(Entity):
                         else:
                             self.pip_parent.rotation_z = 0
                             
-                        self.pip_l.position = (-0.015, 0)
-                        self.pip_r.position = (0.015, 0)
+                        pip_size = max(size, 0.015)
+                        self.pip_l.position = (-pip_size, 0)
+                        self.pip_r.position = (pip_size, 0)
                         
                         pip_dist_from_center = Vec2(pip_x, pip_y).length()
                         if pip_dist_from_center < size * 1.2:
