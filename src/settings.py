@@ -1,5 +1,9 @@
 from ursina import color
 
+# ----------------- NETWORK SETTINGS -----------------
+MULTIPLAYER_SERVER_IP = "localhost"
+MULTIPLAYER_SERVER_PORT = 25565
+
 # ----------------- ENVIRONMENT SETTINGS -----------------
 STARFIELD_NUM_STARS = 5000
 STARFIELD_RADIUS = 5000

@@ -80,8 +80,9 @@ class BaseShip(Entity):
         self.gun_bottom.visible = True
 
     def fire_lasers(self):
-        if self.dead: return
+        if self.dead: return []
         guns = [self.gun_left, self.gun_right, self.gun_bottom]
+        laser_data = []
         for gun in guns:
             spawn_pos = gun.world_position + self.forward * 0.3
             
@@ -94,6 +95,8 @@ class BaseShip(Entity):
             proj_vel = self.velocity + fire_dir * cfg.WEAPON_LASER_SPEED
             
             LaserProjectile(position=spawn_pos, velocity=proj_vel, owner=self)
+            laser_data.append((spawn_pos, proj_vel))
+        return laser_data
 
 
 class LocalPlayer(BaseShip):
@@ -190,6 +193,12 @@ class LocalPlayer(BaseShip):
         camera.position = (0, 0, 0)
         camera.rotation = (0, 0, 0)
         self.ui.set_hud_visible(True)
+
+    def fire_lasers(self):
+        laser_data = super().fire_lasers()
+        if hasattr(self, 'network_manager'):
+            for pos, vel in laser_data:
+                self.network_manager.fire_laser(pos, vel)
 
     def update(self):
         if held_keys['escape']:

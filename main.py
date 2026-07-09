@@ -12,17 +12,22 @@ from src.environment import setup_environment
 from src.ui import UIManager
 from src.player import LocalPlayer, RemotePlayer
 
+from src.network import NetworkManager
+
 clock_obj = ClockObject.get_global_clock()
 ui_manager = UIManager()
 player = LocalPlayer(ui_manager)
 stars, dust, lumina, cubes = setup_environment(player)
 ui_manager.player = player
 
-# Spawn a dummy remote player
-dummy_player = RemotePlayer(position=(0, 0, 50))
+player.obstacles = cubes
+for cube in cubes:
+    ui_manager.add_target_marker(cube)
 
-player.obstacles = cubes + [dummy_player]
-for obj in player.obstacles:
-    ui_manager.add_target_marker(obj)
+network_manager = NetworkManager(player, ui_manager)
+player.network_manager = network_manager
+
+def update():
+    network_manager.update()
 
 app.run()
