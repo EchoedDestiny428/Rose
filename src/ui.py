@@ -226,6 +226,7 @@ class UIManager(Entity):
         self.boost_label = Text(text='100%\nAB', position=(0.15, -0.15), origin=(0, 0), color=self.amber, scale=0.6, parent=camera.ui)
 
         self.hud_text = Text(text='', position=(0.15, -0.25), origin=(0, 0), color=self.amber, scale=0.7, parent=camera.ui)
+        self.player_hp_text = Text(text='', position=(0, -0.30), origin=(0, 0), color=self.cyan, scale=0.8, parent=camera.ui)
 
         self.notification_text = Text(text='', position=(0.7, 0.45), origin=(0.5, 0.5), color=self.cyan, scale=1.0, parent=camera.ui)
 
@@ -324,7 +325,8 @@ class UIManager(Entity):
             self.center_crosshair, self.direction_arrow,
             self.speed_bar_bg, self.speed_bar, self.speed_label,
             self.boost_bar_bg, self.boost_bar, self.boost_label,
-            self.hud_text, self.prograde_marker, self.retrograde_marker
+            self.hud_text, self.prograde_marker, self.retrograde_marker,
+            self.player_hp_text
         ]
         for el in hud_elements:
             el.enabled = visible
@@ -382,6 +384,19 @@ class UIManager(Entity):
 
             cpl_str = "ON" if self.player.coupled_mode else "OFF"
             self.hud_text.text = f"CPL: {cpl_str}"
+            
+            if hasattr(self.player, 'health') and hasattr(self.player, 'max_health'):
+                php = max(0, self.player.health)
+                pmax = self.player.max_health
+                php_ratio = php / pmax if pmax > 0 else 0
+                self.player_hp_text.text = f"HULL: {int(php_ratio*100)}%"
+                
+                if php_ratio > 0.5:
+                    self.player_hp_text.color = self.cyan
+                elif php_ratio > 0.25:
+                    self.player_hp_text.color = self.amber
+                else:
+                    self.player_hp_text.color = color.rgba(1.0, 0.0, 0.0, 1.0)
 
             if speed > 1.0:
                 v_norm = self.player.velocity.normalized()

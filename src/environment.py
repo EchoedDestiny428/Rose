@@ -75,7 +75,7 @@ class Obstacle(Entity):
         )
         self.transparent = True
         self.player = player
-        self.max_health = 1000.0
+        self.max_health = 3000.0
         self.respawn()
 
     @property

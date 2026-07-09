@@ -372,16 +372,18 @@ class LocalPlayer(BaseShip):
         hit_info = self.intersects()
         if hit_info.hit:
             impact_speed = self.velocity.length()
-            if impact_speed >= cfg.DEATH_IMPACT_SPEED and not self.dead:
-                self.take_damage(self.max_health)
-                if hasattr(hit_info.entity, 'respawn'):
-                    hit_info.entity.respawn()
+            
+            if impact_speed > 5.0 and not self.dead:
+                damage = impact_speed * 5.0
+                self.take_damage(damage)
+                if hasattr(hit_info.entity, 'take_damage'):
+                    hit_info.entity.take_damage(damage)
+                    
+            self.position -= self.velocity * time.dt
+            if hit_info.normal.length() > 0:
+                self.velocity = self.velocity - 2 * self.velocity.dot(hit_info.normal) * hit_info.normal
             else:
-                self.position -= self.velocity * time.dt
-                if hit_info.normal.length() > 0:
-                    self.velocity = self.velocity - 2 * self.velocity.dot(hit_info.normal) * hit_info.normal
-                else:
-                    self.velocity = -self.velocity
+                self.velocity = -self.velocity
             self.velocity *= 0.5
 
     def intersects(self):
