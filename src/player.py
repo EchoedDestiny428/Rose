@@ -27,10 +27,9 @@ class LaserProjectile(Entity):
             
         self.position += self.velocity * time.dt
 
-class PlayerController(Entity):
-    def __init__(self, ui_manager):
-        super().__init__(model='sphere', color=color.red, scale=cfg.PLAYER_SCALE, collider='sphere')
-        self.ui = ui_manager
+class BaseShip(Entity):
+    def __init__(self, color_choice=color.red, **kwargs):
+        super().__init__(model='sphere', color=color_choice, scale=cfg.PLAYER_SCALE, collider='sphere', **kwargs)
         
         # Laser guns
         gun_scale = (0.1, 0.6, 0.1)
@@ -38,6 +37,69 @@ class PlayerController(Entity):
         self.gun_left = Entity(parent=self, model=Cylinder(16), color=gun_color, scale=gun_scale, position=(-0.6, 0, 0.2), rotation=(90, 0, 0))
         self.gun_right = Entity(parent=self, model=Cylinder(16), color=gun_color, scale=gun_scale, position=(0.6, 0, 0.2), rotation=(90, 0, 0))
         self.gun_bottom = Entity(parent=self, model=Cylinder(16), color=gun_color, scale=gun_scale, position=(0, -0.6, 0.2), rotation=(90, 0, 0))
+        
+        self.velocity = Vec3(0, 0, 0)
+        self.dead = False
+        self.max_health = 1000.0
+        self.health = self.max_health
+
+    def take_damage(self, amount):
+        if self.dead: return
+        self.health -= amount
+        if self.health <= 0:
+            self.die()
+            
+    def die(self):
+        self.dead = True
+        self.velocity = Vec3(0,0,0)
+        
+        # Create explosion entity
+        self.explosion = Entity(model='sphere', color=color.orange, scale=1, position=self.position)
+        self.explosion.animate_scale(cfg.DEATH_EXPLOSION_SCALE, duration=cfg.DEATH_EXPLOSION_DURATION, curve=curve.out_expo)
+        self.explosion.animate_color(color.rgba(255, 100, 0, 0), duration=cfg.DEATH_FADE_DURATION)
+        destroy(self.explosion, delay=cfg.DEATH_FADE_DURATION)
+        
+        # Hide player model
+        self.visible = False
+        self.gun_left.visible = False
+        self.gun_right.visible = False
+        self.gun_bottom.visible = False
+        
+        # Schedule respawn
+        invoke(self.respawn, delay=cfg.DEATH_RESPAWN_DELAY)
+
+    def respawn(self):
+        self.dead = False
+        self.health = self.max_health
+        self.position = Vec3(0, 0, 0)
+        self.velocity = Vec3(0, 0, 0)
+        self.rotation = Vec3(0, 0, 0)
+        self.visible = True
+        self.gun_left.visible = True
+        self.gun_right.visible = True
+        self.gun_bottom.visible = True
+
+    def fire_lasers(self):
+        if self.dead: return
+        guns = [self.gun_left, self.gun_right, self.gun_bottom]
+        for gun in guns:
+            spawn_pos = gun.world_position + self.forward * 0.3
+            
+            spread_x = random.uniform(-cfg.WEAPON_LASER_SPREAD, cfg.WEAPON_LASER_SPREAD)
+            spread_y = random.uniform(-cfg.WEAPON_LASER_SPREAD, cfg.WEAPON_LASER_SPREAD)
+            spread_z = random.uniform(-cfg.WEAPON_LASER_SPREAD, cfg.WEAPON_LASER_SPREAD)
+            spread_vec = Vec3(spread_x, spread_y, spread_z)
+            
+            fire_dir = (self.forward + spread_vec).normalized()
+            proj_vel = self.velocity + fire_dir * cfg.WEAPON_LASER_SPEED
+            
+            LaserProjectile(position=spawn_pos, velocity=proj_vel, owner=self)
+
+
+class LocalPlayer(BaseShip):
+    def __init__(self, ui_manager, **kwargs):
+        super().__init__(color_choice=color.red, **kwargs)
+        self.ui = ui_manager
         
         self.third_person = False
         self.third_person_zoom = cfg.THIRD_PERSON_ZOOM_DEFAULT
@@ -49,7 +111,6 @@ class PlayerController(Entity):
         camera.position = cfg.PLAYER_START_POS
         camera.rotation = cfg.PLAYER_START_ROT
         
-        self.velocity = Vec3(0, 0, 0)
         self.roll_velocity = 0.0
         self.angular_vel_yaw = 0.0
         self.angular_vel_pitch = 0.0
@@ -60,7 +121,6 @@ class PlayerController(Entity):
         # Boost system
         self.boost_fuel = cfg.BOOST_FUEL_MAX
         self.is_boosting = False
-        self.dead = False
         
         # Weapons
         self.fire_cooldown = 0.0
@@ -68,13 +128,13 @@ class PlayerController(Entity):
         self.hard_target = None
 
     def input(self, key):
-        if getattr(self, 'dead', False): return
+        if self.dead: return
         
         if key == 't':
             best_dot = -1.0
             best_cube = None
             for cube in self.obstacles:
-                if not cube.enabled: continue
+                if not cube.enabled or getattr(cube, 'dead', False): continue
                 dist = distance(self.world_position, cube.world_position)
                 if dist <= cfg.RADAR_RANGE:
                     v = cube.world_position - camera.world_position
@@ -109,12 +169,33 @@ class PlayerController(Entity):
                 self.third_person_zoom = min(cfg.THIRD_PERSON_ZOOM_MAX, self.third_person_zoom + cfg.THIRD_PERSON_ZOOM_SPEED)
                 camera.position = (0, 3, -self.third_person_zoom)
 
+    def die(self):
+        super().die()
+        # Switch to 3rd person view for death
+        self.third_person = True
+        self.camera_gimbal.rotation = (0, 0, 0)
+        camera.position = (0, 8, -30)
+        camera.rotation = (15, 0, 0)
+        self.ui.set_hud_visible(False)
+
+    def respawn(self):
+        super().respawn()
+        self.roll_velocity = 0
+        self.angular_vel_yaw = 0
+        self.angular_vel_pitch = 0
+        self.boost_fuel = cfg.BOOST_FUEL_MAX
+        
+        self.third_person = False
+        self.camera_gimbal.rotation = (0, 0, 0)
+        camera.position = (0, 0, 0)
+        camera.rotation = (0, 0, 0)
+        self.ui.set_hud_visible(True)
+
     def update(self):
         if held_keys['escape']:
             application.quit()
         
-        if getattr(self, 'dead', False):
-            return
+        if self.dead: return
 
         joy_x = self.ui.cursor_pos.x
         joy_y = self.ui.cursor_pos.y
@@ -134,7 +215,6 @@ class PlayerController(Entity):
             self.is_boosting = True
             self.boost_fuel -= cfg.BOOST_DRAIN_RATE * time.dt
             if self.boost_fuel < 0: self.boost_fuel = 0
-            
             current_sens *= cfg.BOOST_TURN_MULT
         else:
             self.is_boosting = False
@@ -150,7 +230,6 @@ class PlayerController(Entity):
         curved_norm_y = math.copysign(abs(norm_y) ** curve, norm_y)
         
         # The original code mapped joy [-max_radius, max_radius] to roughly [-0.5, 0.5].
-        # So we scale the curved [-1, 1] result by 0.5.
         scaled_joy_x = curved_norm_x * 0.5
         scaled_joy_y = curved_norm_y * 0.5
 
@@ -218,7 +297,6 @@ class PlayerController(Entity):
         self.rotate((delta_pitch, delta_yaw, delta_roll))
 
         acceleration = Vec3(0, 0, 0)
-        # Scaled thrust (forward 100%, strafe 30%, reverse 30%)
         if held_keys['w']: acceleration += self.forward * 1.0
         if held_keys['s']: acceleration += self.back * 0.3
         if held_keys['d']: acceleration += self.right * 0.3
@@ -255,8 +333,8 @@ class PlayerController(Entity):
         hit_info = self.intersects()
         if hit_info.hit:
             impact_speed = self.velocity.length()
-            if impact_speed >= cfg.DEATH_IMPACT_SPEED and not getattr(self, 'dead', False):
-                self.die()
+            if impact_speed >= cfg.DEATH_IMPACT_SPEED and not self.dead:
+                self.take_damage(self.max_health)
                 if hasattr(hit_info.entity, 'respawn'):
                     hit_info.entity.respawn()
             else:
@@ -267,58 +345,14 @@ class PlayerController(Entity):
                     self.velocity = -self.velocity
             self.velocity *= 0.5
 
-    def die(self):
-        self.dead = True
-        self.velocity = Vec3(0,0,0)
-        
-        # Switch to 3rd person view for death
-        self.third_person = True
-        self.camera_gimbal.rotation = (0, 0, 0)
-        camera.position = (0, 8, -30)
-        camera.rotation = (15, 0, 0)
-        self.ui.set_hud_visible(False)
-        
-        # Create explosion entity
-        self.explosion = Entity(model='sphere', color=color.orange, scale=1, position=self.position)
-        self.explosion.animate_scale(cfg.DEATH_EXPLOSION_SCALE, duration=cfg.DEATH_EXPLOSION_DURATION, curve=curve.out_expo)
-        self.explosion.animate_color(color.rgba(255, 100, 0, 0), duration=cfg.DEATH_FADE_DURATION)
-        destroy(self.explosion, delay=cfg.DEATH_FADE_DURATION)
-        
-        # Hide player model
-        self.visible = False
-        
-        # Schedule respawn
-        invoke(self.respawn, delay=cfg.DEATH_RESPAWN_DELAY)
 
-    def respawn(self):
-        self.dead = False
-        self.position = Vec3(0, 0, 0)
-        self.velocity = Vec3(0, 0, 0)
-        self.rotation = Vec3(0, 0, 0)
-        self.roll_velocity = 0
-        self.angular_vel_yaw = 0
-        self.angular_vel_pitch = 0
-        self.boost_fuel = cfg.BOOST_FUEL_MAX
-        
-        self.visible = True
-        
-        self.third_person = False
-        self.camera_gimbal.rotation = (0, 0, 0)
-        camera.position = (0, 0, 0)
-        camera.rotation = (0, 0, 0)
-        self.ui.set_hud_visible(True)
+class RemotePlayer(BaseShip):
+    def __init__(self, **kwargs):
+        super().__init__(color_choice=color.blue, **kwargs)
+        self.target_position = self.position
+        self.target_rotation = self.rotation
 
-    def fire_lasers(self):
-        guns = [self.gun_left, self.gun_right, self.gun_bottom]
-        for gun in guns:
-            spawn_pos = gun.world_position + self.forward * 0.3
-            
-            spread_x = random.uniform(-cfg.WEAPON_LASER_SPREAD, cfg.WEAPON_LASER_SPREAD)
-            spread_y = random.uniform(-cfg.WEAPON_LASER_SPREAD, cfg.WEAPON_LASER_SPREAD)
-            spread_z = random.uniform(-cfg.WEAPON_LASER_SPREAD, cfg.WEAPON_LASER_SPREAD)
-            spread_vec = Vec3(spread_x, spread_y, spread_z)
-            
-            fire_dir = (self.forward + spread_vec).normalized()
-            proj_vel = self.velocity + fire_dir * cfg.WEAPON_LASER_SPEED
-            
-            LaserProjectile(position=spawn_pos, velocity=proj_vel, owner=self)
+    def update(self):
+        if self.dead: return
+        self.position = lerp(self.position, self.target_position, time.dt * 10)
+        self.rotation = lerp(self.rotation, self.target_rotation, time.dt * 10)

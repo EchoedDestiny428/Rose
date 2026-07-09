@@ -10,16 +10,19 @@ app = Ursina()
 
 from src.environment import setup_environment
 from src.ui import UIManager
-from src.player import PlayerController
+from src.player import LocalPlayer, RemotePlayer
 
 clock_obj = ClockObject.get_global_clock()
 ui_manager = UIManager()
-player = PlayerController(ui_manager)
+player = LocalPlayer(ui_manager)
 stars, dust, lumina, cubes = setup_environment(player)
 ui_manager.player = player
 
-player.obstacles = cubes
-for cube in cubes:
-    ui_manager.add_target_marker(cube)
+# Spawn a dummy remote player
+dummy_player = RemotePlayer(position=(0, 0, 50))
+
+player.obstacles = cubes + [dummy_player]
+for obj in player.obstacles:
+    ui_manager.add_target_marker(obj)
 
 app.run()
