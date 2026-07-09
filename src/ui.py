@@ -210,6 +210,12 @@ class UIManager(Entity):
 
         self.player = None
         self.target_markers = []
+        self.hard_target = None
+
+        self.holo_dummy = Entity(parent=camera)
+        self.holo_entity = Entity(parent=camera.ui, model='cube', color=color.rgba(255, 255, 255, 100), scale=0.08, position=(0.6, -0.1), enabled=False)
+        self.holo_entity.unlit = True
+        self.holo_text = Text(text='', position=(0.6, -0.25), origin=(0, 0), color=color.white, scale=0.8, parent=camera.ui, enabled=False)
 
         self.speed_bar_bg = Entity(model='quad', color=self.amber_faint, scale=(0.008, 0.2), position=(-0.15, -0.1), origin=(0, -0.5), parent=camera.ui, z=1)
         self.speed_bar = Entity(model='quad', color=self.cyan, scale=(0.008, 0.001), position=(-0.15, -0.1), origin=(0, -0.5), parent=camera.ui, z=0.5)
@@ -295,8 +301,18 @@ class UIManager(Entity):
         self.target_markers.append(marker)
 
     def set_hard_target(self, target_entity):
+        self.hard_target = target_entity
         for marker in self.target_markers:
             marker.is_hard_locked = (marker.target == target_entity)
+            
+        if self.hard_target:
+            self.holo_entity.enabled = True
+            self.holo_text.enabled = True
+            self.holo_entity.model = 'cube'
+            self.holo_entity.transparent = True
+        else:
+            self.holo_entity.enabled = False
+            self.holo_text.enabled = False
 
     def show_notification(self, message):
         self.notification_text.text = message
@@ -397,6 +413,33 @@ class UIManager(Entity):
             else:
                 self.prograde_marker.enabled = False
                 self.retrograde_marker.enabled = False
+
+        if self.hard_target:
+            if getattr(self.hard_target, 'dead', False) or getattr(self.hard_target, 'health', 0) <= 0:
+                self.set_hard_target(None)
+            else:
+                self.holo_dummy.world_rotation = self.hard_target.world_rotation
+                self.holo_entity.rotation = self.holo_dummy.rotation
+                
+                if hasattr(self.hard_target, 'hp'):
+                    hp_ratio = self.hard_target.hp
+                else:
+                    hp = getattr(self.hard_target, 'health', 100)
+                    max_hp = getattr(self.hard_target, 'max_health', 100)
+                    hp_ratio = hp / max_hp if max_hp > 0 else 0
+                
+                if hp_ratio > 0.75:
+                    c = color.rgba(255, 255, 255, 100)
+                elif hp_ratio > 0.5:
+                    c = color.rgba(255, 255, 0, 100)
+                elif hp_ratio > 0.25:
+                    c = color.rgba(255, 165, 0, 100)
+                else:
+                    c = color.rgba(255, 0, 0, 100)
+                    
+                self.holo_entity.color = c
+                self.holo_text.color = c
+                self.holo_text.text = f"TARGET HP: {int(hp_ratio*100)}%"
 
     def get_sensitivity(self):
         return self.sensitivity_slider.value

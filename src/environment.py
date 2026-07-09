@@ -78,7 +78,17 @@ class Obstacle(Entity):
         self.max_health = 1000.0
         self.respawn()
 
+    @property
+    def hp(self):
+        actual_ratio = self.health / self.max_health
+        display_ratio = (actual_ratio - 0.2) / 0.8
+        return max(0.0, display_ratio)
+
     def respawn(self):
+        if hasattr(self, 'player') and self.player and hasattr(self.player, 'ui'):
+            if self.player.ui.hard_target == self:
+                self.player.ui.set_hard_target(None)
+        
         self.health = self.max_health
         self.color = color.white
         self.alpha = 1.0
