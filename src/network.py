@@ -14,6 +14,8 @@ class NetworkManager:
         self.last_sync = 0.0
         self.sync_rate = 1.0 / 20.0 # 20 Hz
         
+        self.debug_text = Text(text='', position=(-0.7, 0.45), origin=(-0.5, 0.5), color=color.yellow, scale=0.8, parent=camera.ui)
+        
         # Bind events
         self.client.event(self.player_joined)
         self.client.event(self.player_left)
@@ -23,6 +25,7 @@ class NetworkManager:
 
     def welcome(self, data):
         self.ui_manager.show_notification(f"Connected as {data}!")
+        self.local_player_id = data
 
     def player_joined(self, p_id):
         print(f"Player joined: {p_id}")
@@ -62,8 +65,10 @@ class NetworkManager:
             LaserProjectile(position=pos, velocity=vel, owner=rp)
 
     def fire_laser(self, pos, vel):
-        # We convert Vec3 to standard tuples for network serialization
+        if not hasattr(self, 'local_player_id'):
+            return
         self.client.send_message("fire_laser", {
+            "id": self.local_player_id,
             "pos": (pos.x, pos.y, pos.z),
             "vel": (vel.x, vel.y, vel.z)
         })
@@ -75,10 +80,19 @@ class NetworkManager:
         if self.last_sync >= self.sync_rate:
             self.last_sync = 0.0
             
+            if not hasattr(self, 'local_player_id'):
+                return
+                
             p = self.local_player.position
             r = self.local_player.rotation
             
             self.client.send_message("update_pos", {
+                "id": self.local_player_id,
                 "pos": (p.x, p.y, p.z),
                 "rot": (r.x, r.y, r.z)
             })
+            
+        debug_str = f"Local: {self.local_player.position.x:.1f}, {self.local_player.position.y:.1f}, {self.local_player.position.z:.1f}\n"
+        for p_id, rp in self.remote_players.items():
+            debug_str += f"Remote {p_id}: {rp.target_position.x:.1f}, {rp.target_position.y:.1f}, {rp.target_position.z:.1f}\n"
+        self.debug_text.text = debug_str

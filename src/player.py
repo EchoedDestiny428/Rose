@@ -138,8 +138,11 @@ class LocalPlayer(BaseShip):
         self.position = self.get_safe_spawn()
 
     def get_safe_spawn(self):
+        import os
+        import random as rnd
+        r = rnd.Random(os.urandom(8))
         for _ in range(50):
-            pos = Vec3(random.uniform(-100, 100), random.uniform(-100, 100), random.uniform(-100, 100))
+            pos = Vec3(r.uniform(-100, 100), r.uniform(-100, 100), r.uniform(-100, 100))
             safe = True
             for obs in self.obstacles:
                 if not obs.enabled or getattr(obs, 'dead', False): continue
@@ -394,7 +397,16 @@ class RemotePlayer(BaseShip):
         self.target_position = self.position
         self.target_rotation = self.rotation
 
+    def take_damage(self, amount):
+        pass # Remote players only die when the server/their client says so!
+
+    def die(self):
+        pass
+
+    def respawn(self):
+        pass
+
     def update(self):
         if self.dead: return
-        self.position = lerp(self.position, self.target_position, time.dt * 10)
-        self.rotation = lerp(self.rotation, self.target_rotation, time.dt * 10)
+        self.position = self.target_position
+        self.rotation = self.target_rotation

@@ -81,8 +81,9 @@ class TargetMarker(Entity):
             (up_dot / fwd_dot) * c_factor
         )
         
-        size = 5.0 / dist
-        size = max(size, cfg.TARGET_MIN_SIZE)
+        size = (self.target.scale_x / dist) * c_factor
+        # clamp maximum size so it doesn't cover the whole screen when too close
+        size = min(size, 0.5)
         
         size = size * self.lock_anim_scale
         
@@ -153,8 +154,8 @@ class TargetMarker(Entity):
                         else:
                             self.pip_parent.rotation_z = 0
                             
-                        self.pip_l.position = (-size, 0)
-                        self.pip_r.position = (size, 0)
+                        self.pip_l.position = (-0.015, 0)
+                        self.pip_r.position = (0.015, 0)
                         
                         pip_dist_from_center = Vec2(pip_x, pip_y).length()
                         if pip_dist_from_center < size * 1.2:
@@ -219,7 +220,7 @@ class UIManager(Entity):
 
         self.hud_text = Text(text='', position=(0.15, -0.25), origin=(0, 0), color=self.amber, scale=0.7, parent=camera.ui)
 
-        self.notification_text = Text(text='', position=(0.85, 0.45), origin=(0.5, 0.5), color=self.cyan, scale=1.0, parent=camera.ui)
+        self.notification_text = Text(text='', position=(0.7, 0.45), origin=(0.5, 0.5), color=self.cyan, scale=1.0, parent=camera.ui)
 
         self.prograde_marker = Text(text='[o]', color=self.cyan, scale=0.8, origin=(0,0), parent=camera.ui)
         self.prograde_marker.enabled = False
