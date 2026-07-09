@@ -228,8 +228,8 @@ class UIManager(Entity):
         self.slider_bg = Entity(
             model='quad',
             color=color.rgba(255, 255, 255, 180),
-            scale=(0.7, 0.42),
-            position=(-0.55, -0.27),
+            scale=(0.7, 0.48),
+            position=(-0.55, -0.30),
             parent=camera.ui,
             z=1
         )
@@ -257,6 +257,10 @@ class UIManager(Entity):
         self.roll_speed_slider = Slider(min=cfg.SLIDER_MAX_ROLL_SPEED[0], max=cfg.SLIDER_MAX_ROLL_SPEED[1], default=cfg.SLIDER_MAX_ROLL_SPEED[2], text='Max Roll', dynamic=True, position=(-0.65, -0.40), scale=0.7)
         self.roll_speed_slider.label.color = color.black
         self.roll_speed_slider.knob.text_entity.color = color.black
+        
+        self.sens_curve_slider = Slider(min=cfg.SLIDER_SENS_CURVE[0], max=cfg.SLIDER_SENS_CURVE[1], default=cfg.SLIDER_SENS_CURVE[2], text='Sens Curve', dynamic=True, position=(-0.65, -0.46), scale=0.7)
+        self.sens_curve_slider.label.color = color.black
+        self.sens_curve_slider.knob.text_entity.color = color.black
 
         self.sliders_ui = [
             self.slider_bg,
@@ -265,7 +269,8 @@ class UIManager(Entity):
             self.max_speed_slider,
             self.fov_slider,
             self.roll_slider,
-            self.roll_speed_slider
+            self.roll_speed_slider,
+            self.sens_curve_slider
         ]
         self.sliders_visible = True
         self.toggle_sliders() # Start hidden for clean HUD
@@ -386,6 +391,9 @@ class UIManager(Entity):
 
     def get_sensitivity(self):
         return self.sensitivity_slider.value
+        
+    def get_sensitivity_curve(self):
+        return self.sens_curve_slider.value
     
     def get_acceleration(self):
         return self.acceleration_slider.value

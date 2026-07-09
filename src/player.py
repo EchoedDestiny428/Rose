@@ -1,6 +1,7 @@
 from ursina import *
 import src.settings as cfg
 import random
+import math
 
 class LaserProjectile(Entity):
     def __init__(self, position, velocity, owner=None):
@@ -122,10 +123,20 @@ class PlayerController(Entity):
         if abs(joy_y) < self.ui.deadzone: joy_y = 0
 
         current_sens = self.ui.get_sensitivity()
+        curve = self.ui.get_sensitivity_curve()
         
-        scale_factor = 0.5 / self.ui.max_radius
-        scaled_joy_x = joy_x * scale_factor
-        scaled_joy_y = joy_y * scale_factor
+        # Normalize joystick values to [-1, 1] range based on max_radius
+        norm_x = clamp(joy_x / self.ui.max_radius, -1, 1)
+        norm_y = clamp(joy_y / self.ui.max_radius, -1, 1)
+        
+        # Apply sensitivity curve: preserve sign, apply exponent to magnitude
+        curved_norm_x = math.copysign(abs(norm_x) ** curve, norm_x)
+        curved_norm_y = math.copysign(abs(norm_y) ** curve, norm_y)
+        
+        # The original code mapped joy [-max_radius, max_radius] to roughly [-0.5, 0.5].
+        # So we scale the curved [-1, 1] result by 0.5.
+        scaled_joy_x = curved_norm_x * 0.5
+        scaled_joy_y = curved_norm_y * 0.5
 
         target_yaw_vel = scaled_joy_x * current_sens
         target_pitch_vel = -scaled_joy_y * current_sens
