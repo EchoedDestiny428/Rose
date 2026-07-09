@@ -213,7 +213,7 @@ class UIManager(Entity):
         self.hard_target = None
 
         self.holo_dummy = Entity(parent=camera)
-        self.holo_entity = Entity(parent=camera.ui, model='cube', color=color.rgba(255, 255, 255, 100), scale=0.08, position=(0.6, -0.1), enabled=False)
+        self.holo_entity = Entity(parent=camera.ui, model='cube', color=color.rgba(1.0, 1.0, 1.0, 0.4), scale=0.08, position=(0.6, -0.1), enabled=False)
         self.holo_entity.unlit = True
         self.holo_text = Text(text='', position=(0.6, -0.25), origin=(0, 0), color=color.white, scale=0.8, parent=camera.ui, enabled=False)
 
@@ -429,13 +429,13 @@ class UIManager(Entity):
                     hp_ratio = hp / max_hp if max_hp > 0 else 0
                 
                 if hp_ratio > 0.75:
-                    c = color.rgba(255, 255, 255, 100)
+                    c = color.rgba(1.0, 1.0, 1.0, 0.7)
                 elif hp_ratio > 0.5:
-                    c = color.rgba(255, 255, 0, 100)
+                    c = color.rgba(1.0, 1.0, 0.0, 0.7)
                 elif hp_ratio > 0.25:
-                    c = color.rgba(255, 165, 0, 100)
+                    c = color.rgba(1.0, 0.65, 0.0, 0.7)
                 else:
-                    c = color.rgba(255, 0, 0, 100)
+                    c = color.rgba(1.0, 0.0, 0.0, 0.7)
                     
                 self.holo_entity.color = c
                 self.holo_text.color = c
