@@ -52,6 +52,12 @@ def fire_laser(client, data):
         if str(c.id) != str(real_client_id):
             c.send_message("spawn_laser", sync_data)
 
+@server.event
+def hit_player(client, data):
+    for c in server.get_clients():
+        if str(c.id) != str(client.id):
+            c.send_message("hit_player", data)
+
 print(f"Server starting on 0.0.0.0:{cfg.MULTIPLAYER_SERVER_PORT} (Accepting LAN connections)...")
 while True:
     server.process_net_events()

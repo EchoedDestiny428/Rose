@@ -309,7 +309,10 @@ class UIManager(Entity):
         if self.hard_target:
             self.holo_entity.enabled = True
             self.holo_text.enabled = True
-            self.holo_entity.model = 'cube'
+            if type(self.hard_target).__name__ == 'RemotePlayer':
+                self.holo_entity.model = 'sphere'
+            else:
+                self.holo_entity.model = 'cube'
             self.holo_entity.transparent = True
         else:
             self.holo_entity.enabled = False

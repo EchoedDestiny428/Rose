@@ -20,8 +20,19 @@ class LaserProjectile(Entity):
         dist = self.velocity.length() * time.dt
         hit_info = raycast(self.position, self.velocity.normalized(), distance=dist, ignore=(self, self.owner))
         if hit_info.hit:
+            is_local_owner = type(self.owner).__name__ == 'LocalPlayer'
+            
             if hasattr(hit_info.entity, 'take_damage'):
-                hit_info.entity.take_damage(25.0)
+                entity_type = type(hit_info.entity).__name__
+                if entity_type not in ('LocalPlayer', 'RemotePlayer'):
+                    hit_info.entity.take_damage(25.0)
+                elif is_local_owner and entity_type == 'RemotePlayer':
+                    hit_info.entity.take_damage(25.0)
+                    if hasattr(self.owner, 'network_manager'):
+                        self.owner.network_manager.client.send_message("hit_player", {
+                            "target_id": getattr(hit_info.entity, 'player_id', -1),
+                            "damage": 25.0
+                        })
             destroy(self)
             return
             
@@ -40,7 +51,7 @@ class BaseShip(Entity):
         
         self.velocity = Vec3(0, 0, 0)
         self.dead = False
-        self.max_health = 1000.0
+        self.max_health = 250.0
         self.health = self.max_health
 
     def take_damage(self, amount):
@@ -378,6 +389,12 @@ class LocalPlayer(BaseShip):
                 self.take_damage(damage)
                 if hasattr(hit_info.entity, 'take_damage'):
                     hit_info.entity.take_damage(damage)
+                    if type(hit_info.entity).__name__ == 'RemotePlayer':
+                        if hasattr(self, 'network_manager'):
+                            self.network_manager.client.send_message("hit_player", {
+                                "target_id": getattr(hit_info.entity, 'player_id', -1),
+                                "damage": damage
+                            })
                     
             self.position -= self.velocity * time.dt
             if hit_info.normal.length() > 0:
@@ -398,15 +415,6 @@ class RemotePlayer(BaseShip):
         super().__init__(color_choice=color.blue, **kwargs)
         self.target_position = self.position
         self.target_rotation = self.rotation
-
-    def take_damage(self, amount):
-        pass # Remote players only die when the server/their client says so!
-
-    def die(self):
-        pass
-
-    def respawn(self):
-        pass
 
     def update(self):
         if self.dead: return

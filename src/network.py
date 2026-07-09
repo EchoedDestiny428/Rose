@@ -22,6 +22,7 @@ class NetworkManager:
         self.client.event(self.sync_pos)
         self.client.event(self.spawn_laser)
         self.client.event(self.welcome)
+        self.client.event(self.hit_player)
 
     def welcome(self, data):
         self.ui_manager.show_notification(f"Connected as {data}!")
@@ -31,6 +32,7 @@ class NetworkManager:
         print(f"Player joined: {p_id}")
         if p_id not in self.remote_players:
             rp = RemotePlayer(position=(0, -9999, 0))
+            rp.player_id = p_id
             self.remote_players[p_id] = rp
             self.local_player.obstacles.append(rp)
             self.ui_manager.add_target_marker(rp)
@@ -63,6 +65,17 @@ class NetworkManager:
             vel = Vec3(*data["vel"])
             # Create a laser projectile owned by the remote player
             LaserProjectile(position=pos, velocity=vel, owner=rp)
+
+    def hit_player(self, data):
+        t_id = str(data["target_id"])
+        local_id = str(getattr(self, 'local_player_id', -1))
+        
+        if t_id == local_id:
+            self.local_player.take_damage(data["damage"])
+        else:
+            for rp_id, rp in self.remote_players.items():
+                if str(rp_id) == t_id:
+                    rp.take_damage(data["damage"])
 
     def fire_laser(self, pos, vel):
         if not hasattr(self, 'local_player_id'):
