@@ -124,7 +124,23 @@ class PlayerController(Entity):
 
         current_sens = self.ui.get_sensitivity()
         curve = self.ui.get_sensitivity_curve()
-        
+        current_accel = self.ui.get_acceleration()
+        current_max_speed = self.ui.get_max_speed()
+        current_roll_accel = self.ui.get_roll_acceleration()
+        current_max_roll_speed = self.ui.get_max_roll_speed()
+
+        # Boost logic
+        if held_keys['left shift'] and self.boost_fuel > 0:
+            self.is_boosting = True
+            self.boost_fuel -= cfg.BOOST_DRAIN_RATE * time.dt
+            if self.boost_fuel < 0: self.boost_fuel = 0
+            
+            current_sens *= cfg.BOOST_TURN_MULT
+        else:
+            self.is_boosting = False
+            self.boost_fuel += cfg.BOOST_RECHARGE_RATE * time.dt
+            if self.boost_fuel > cfg.BOOST_FUEL_MAX: self.boost_fuel = cfg.BOOST_FUEL_MAX
+            
         # Normalize joystick values to [-1, 1] range based on max_radius
         norm_x = clamp(joy_x / self.ui.max_radius, -1, 1)
         norm_y = clamp(joy_y / self.ui.max_radius, -1, 1)
@@ -147,26 +163,6 @@ class PlayerController(Entity):
 
         delta_yaw = self.angular_vel_yaw * time.dt
         delta_pitch = self.angular_vel_pitch * time.dt
-
-        current_accel = self.ui.get_acceleration()
-        current_max_speed = self.ui.get_max_speed()
-        current_roll_accel = self.ui.get_roll_acceleration()
-        current_max_roll_speed = self.ui.get_max_roll_speed()
-
-        # Boost logic
-        if held_keys['left shift'] and self.boost_fuel > 0:
-            self.is_boosting = True
-            self.boost_fuel -= cfg.BOOST_DRAIN_RATE * time.dt
-            if self.boost_fuel < 0: self.boost_fuel = 0
-            
-            current_accel *= cfg.BOOST_ACCEL_MULT
-            current_roll_accel *= cfg.BOOST_ROLL_ACCEL_MULT
-            current_max_speed += cfg.BOOST_SPEED_BONUS
-            current_max_roll_speed *= cfg.BOOST_MAX_ROLL_SPEED_MULT
-        else:
-            self.is_boosting = False
-            self.boost_fuel += cfg.BOOST_RECHARGE_RATE * time.dt
-            if self.boost_fuel > cfg.BOOST_FUEL_MAX: self.boost_fuel = cfg.BOOST_FUEL_MAX
 
         # Freecam logic
         if held_keys['middle mouse']:
