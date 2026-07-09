@@ -134,6 +134,21 @@ class LocalPlayer(BaseShip):
         self.fire_cooldown = 0.0
         self.obstacles = []
         self.hard_target = None
+        
+        self.position = self.get_safe_spawn()
+
+    def get_safe_spawn(self):
+        for _ in range(50):
+            pos = Vec3(random.uniform(-100, 100), random.uniform(-100, 100), random.uniform(-100, 100))
+            safe = True
+            for obs in self.obstacles:
+                if not obs.enabled or getattr(obs, 'dead', False): continue
+                if distance(pos, obs.position) < 30.0: # At least 30 meters away
+                    safe = False
+                    break
+            if safe:
+                return pos
+        return Vec3(0, 0, 0)
 
     def input(self, key):
         if self.dead: return
@@ -196,6 +211,7 @@ class LocalPlayer(BaseShip):
 
     def respawn(self):
         super().respawn()
+        self.position = self.get_safe_spawn()
         self.roll_velocity = 0
         self.angular_vel_yaw = 0
         self.angular_vel_pitch = 0
@@ -364,6 +380,12 @@ class LocalPlayer(BaseShip):
                 else:
                     self.velocity = -self.velocity
             self.velocity *= 0.5
+
+    def intersects(self):
+        dist = self.velocity.length() * time.dt
+        if dist > 0:
+            return raycast(self.position, self.velocity.normalized(), distance=dist, ignore=(self,))
+        return raycast(self.position, self.forward, distance=0.1, ignore=(self,))
 
 
 class RemotePlayer(BaseShip):

@@ -219,6 +219,8 @@ class UIManager(Entity):
 
         self.hud_text = Text(text='', position=(0.15, -0.25), origin=(0, 0), color=self.amber, scale=0.7, parent=camera.ui)
 
+        self.notification_text = Text(text='', position=(0.85, 0.45), origin=(0.5, 0.5), color=self.cyan, scale=1.0, parent=camera.ui)
+
         self.prograde_marker = Text(text='[o]', color=self.cyan, scale=0.8, origin=(0,0), parent=camera.ui)
         self.prograde_marker.enabled = False
 
@@ -293,6 +295,11 @@ class UIManager(Entity):
     def set_hard_target(self, target_entity):
         for marker in self.target_markers:
             marker.is_hard_locked = (marker.target == target_entity)
+
+    def show_notification(self, message):
+        self.notification_text.text = message
+        self.notification_text.color = self.cyan
+        self.notification_text.animate_color(color.clear, duration=2.0, delay=3.0)
 
     def set_hud_visible(self, visible):
         hud_elements = [

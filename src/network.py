@@ -19,14 +19,19 @@ class NetworkManager:
         self.client.event(self.player_left)
         self.client.event(self.sync_pos)
         self.client.event(self.spawn_laser)
+        self.client.event(self.welcome)
+
+    def welcome(self, data):
+        self.ui_manager.show_notification(f"Connected as {data}!")
 
     def player_joined(self, p_id):
         print(f"Player joined: {p_id}")
         if p_id not in self.remote_players:
-            rp = RemotePlayer(position=(0,0,0))
+            rp = RemotePlayer(position=(0, -9999, 0))
             self.remote_players[p_id] = rp
             self.local_player.obstacles.append(rp)
             self.ui_manager.add_target_marker(rp)
+            self.ui_manager.show_notification(f"Player {p_id} joined!")
 
     def player_left(self, p_id):
         print(f"Player left: {p_id}")
@@ -37,6 +42,7 @@ class NetworkManager:
             self.ui_manager.remove_target_marker(rp)
             destroy(rp)
             del self.remote_players[p_id]
+            self.ui_manager.show_notification(f"Player {p_id} left.")
 
     def sync_pos(self, data):
         p_id = data["id"]

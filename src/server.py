@@ -16,10 +16,11 @@ def onClientConnected(client):
     
     for p_id in players:
         if p_id != client.id:
-            server.send_to(client, "player_joined", p_id)
-            server.send_to(client, "sync_pos", {"id": p_id, "pos": players[p_id]["position"], "rot": players[p_id]["rotation"]})
+            client.send_message("player_joined", p_id)
+            client.send_message("sync_pos", {"id": p_id, "pos": players[p_id]["position"], "rot": players[p_id]["rotation"]})
             
     server.broadcast("player_joined", client.id)
+    client.send_message("welcome", client.id)
 
 @server.event
 def onClientDisconnected(client):
@@ -38,14 +39,14 @@ def update_pos(client, data):
         
         for c in server.get_clients():
             if c.id != client.id:
-                server.send_to(c, "sync_pos", sync_data)
+                c.send_message("sync_pos", sync_data)
 
 @server.event
 def fire_laser(client, data):
     sync_data = {"id": client.id, "pos": data["pos"], "vel": data["vel"]}
     for c in server.get_clients():
         if c.id != client.id:
-            server.send_to(c, "spawn_laser", sync_data)
+            c.send_message("spawn_laser", sync_data)
 
 print(f"Server starting on 0.0.0.0:{cfg.MULTIPLAYER_SERVER_PORT} (Accepting LAN connections)...")
 while True:
