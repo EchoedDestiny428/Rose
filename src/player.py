@@ -104,6 +104,11 @@ class LocalPlayer(BaseShip):
         super().__init__(color_choice=color.red, **kwargs)
         self.ui = ui_manager
         
+        self.visible = False
+        self.gun_left.visible = False
+        self.gun_right.visible = False
+        self.gun_bottom.visible = False
+        
         self.third_person = False
         self.third_person_zoom = cfg.THIRD_PERSON_ZOOM_DEFAULT
         self.freecam_yaw = 0.0
@@ -159,10 +164,18 @@ class LocalPlayer(BaseShip):
                 camera.position = (0, 3, -self.third_person_zoom)
                 camera.rotation = (10, 0, 0)
                 self.ui.set_hud_visible(False)
+                self.visible = True
+                self.gun_left.visible = True
+                self.gun_right.visible = True
+                self.gun_bottom.visible = True
             else:
                 camera.position = (0, 0, 0)
                 camera.rotation = (0, 0, 0)
                 self.ui.set_hud_visible(True)
+                self.visible = False
+                self.gun_left.visible = False
+                self.gun_right.visible = False
+                self.gun_bottom.visible = False
                 
         if self.third_person:
             if key == 'scroll up':
@@ -202,7 +215,8 @@ class LocalPlayer(BaseShip):
 
     def update(self):
         if held_keys['escape']:
-            application.quit()
+            import os
+            os._exit(0)
         
         if self.dead: return
 
@@ -230,15 +244,12 @@ class LocalPlayer(BaseShip):
             self.boost_fuel += cfg.BOOST_RECHARGE_RATE * time.dt
             if self.boost_fuel > cfg.BOOST_FUEL_MAX: self.boost_fuel = cfg.BOOST_FUEL_MAX
             
-        # Normalize joystick values to [-1, 1] range based on max_radius
         norm_x = clamp(joy_x / self.ui.max_radius, -1, 1)
         norm_y = clamp(joy_y / self.ui.max_radius, -1, 1)
         
-        # Apply sensitivity curve: preserve sign, apply exponent to magnitude
         curved_norm_x = math.copysign(abs(norm_x) ** curve, norm_x)
         curved_norm_y = math.copysign(abs(norm_y) ** curve, norm_y)
         
-        # The original code mapped joy [-max_radius, max_radius] to roughly [-0.5, 0.5].
         scaled_joy_x = curved_norm_x * 0.5
         scaled_joy_y = curved_norm_y * 0.5
 
@@ -347,7 +358,7 @@ class LocalPlayer(BaseShip):
                 if hasattr(hit_info.entity, 'respawn'):
                     hit_info.entity.respawn()
             else:
-                self.position -= self.velocity * time.dt  # Revert to prevent clipping
+                self.position -= self.velocity * time.dt
                 if hit_info.normal.length() > 0:
                     self.velocity = self.velocity - 2 * self.velocity.dot(hit_info.normal) * hit_info.normal
                 else:
